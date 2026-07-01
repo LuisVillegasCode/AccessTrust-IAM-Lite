@@ -1,4 +1,7 @@
+using AccessTrust.Web.Services.Auth;
+using AccessTrust.Web.Data;
 using AccessTrust.Web.Settings;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using MongoDB.Driver;
 using AccessTrust.Web.Repositories;
 
@@ -41,7 +44,31 @@ builder.Services.AddSingleton<IMongoDatabase>(serviceProvider =>
 
 builder.Services.AddScoped(typeof(IMongoRepository<>), typeof(MongoRepository<>));
 
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "AccessTrust.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        options.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    await DataSeeder.SeedAsync(scope.ServiceProvider);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -56,6 +83,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

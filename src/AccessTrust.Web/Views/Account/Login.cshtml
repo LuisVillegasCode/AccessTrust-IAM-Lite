@@ -1,0 +1,56 @@
+@model AccessTrust.Web.ViewModels.Account.LoginViewModel
+
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header text-center">
+                <h4 class="mb-0">AccessTrust IAM Lite</h4>
+                <small class="text-muted">Inicio de sesión</small>
+            </div>
+
+            <div class="card-body">
+                <form asp-action="Login" asp-controller="Account" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Correo" class="form-label">Correo</label>
+                        <input asp-for="Correo" class="form-control" placeholder="usuario@accesstrust.local" />
+                        <span asp-validation-for="Correo" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">Contraseña</label>
+                        <input asp-for="Password" class="form-control" placeholder="Ingrese su contraseña" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Iniciar sesión
+                    </button>
+                </form>
+            </div>
+
+            <div class="card-footer small text-muted">
+                Usuarios de prueba:
+                <br />
+                admin@accesstrust.local
+                <br />
+                aprobador@accesstrust.local
+                <br />
+                solicitante@accesstrust.local
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
