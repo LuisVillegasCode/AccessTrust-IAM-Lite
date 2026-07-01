@@ -1,5 +1,6 @@
 using AccessTrust.Web.Settings;
 using MongoDB.Driver;
+using AccessTrust.Web.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,8 @@ builder.Services.AddSingleton<IMongoDatabase>(serviceProvider =>
     var client = serviceProvider.GetRequiredService<IMongoClient>();
     return client.GetDatabase(settings.DatabaseName);
 });
+
+builder.Services.AddScoped(typeof(IMongoRepository<>), typeof(MongoRepository<>));
 
 var app = builder.Build();
 
