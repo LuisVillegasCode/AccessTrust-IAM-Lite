@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.Requests;
 using AccessTrust.Web.Services.Policies;
 using AccessTrust.Web.Services.Resources;
 using AccessTrust.Web.Services.Audit;
@@ -70,6 +71,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 
 builder.Services.AddScoped<IPoliticaAccesoService, PoliticaAccesoService>();
 builder.Services.AddScoped<IRecursoService, RecursoService>();
+builder.Services.AddScoped<ISolicitudAccesoService, SolicitudAccesoService>();
 
 var app = builder.Build();
 
