@@ -1,0 +1,100 @@
+@model AccessTrust.Web.ViewModels.Requests.SolicitudAccesoDetailsViewModel
+
+@{
+    ViewData["Title"] = "Detalle de solicitud";
+}
+
+<h2>Detalle de solicitud de acceso</h2>
+
+<p class="text-muted">
+    Información completa de la solicitud de acceso temporal registrada.
+</p>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Recurso</dt>
+            <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+            <dt class="col-sm-3">Tipo de recurso</dt>
+            <dd class="col-sm-9">@Model.RecursoTipo</dd>
+
+            <dt class="col-sm-3">Sensibilidad</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-secondary">
+                    @Model.RecursoSensibilidad
+                </span>
+            </dd>
+
+            <dt class="col-sm-3">Motivo</dt>
+            <dd class="col-sm-9">@Model.Motivo</dd>
+
+            <dt class="col-sm-3">Duración solicitada</dt>
+            <dd class="col-sm-9">@Model.DuracionSolicitadaMin min</dd>
+
+            <dt class="col-sm-3">Prioridad</dt>
+            <dd class="col-sm-9">@Model.Prioridad</dd>
+
+            <dt class="col-sm-3">Estado</dt>
+            <dd class="col-sm-9">
+                @if (Model.Estado == AccessTrust.Web.Models.EstadoSolicitud.Pendiente)
+                {
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                }
+                else if (Model.Estado == AccessTrust.Web.Models.EstadoSolicitud.Aprobada)
+                {
+                    <span class="badge bg-success">Aprobada</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Rechazada</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Observación</dt>
+            <dd class="col-sm-9">
+                @if (!string.IsNullOrWhiteSpace(Model.Observacion))
+                {
+                    @Model.Observacion
+                }
+                else
+                {
+                    <span class="text-muted">Sin observación registrada</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Aprobador Id</dt>
+            <dd class="col-sm-9">
+                @if (!string.IsNullOrWhiteSpace(Model.AprobadorId))
+                {
+                    @Model.AprobadorId
+                }
+                else
+                {
+                    <span class="text-muted">Aún no asignado</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Fecha de solicitud</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
+
+            <dt class="col-sm-3">Fecha de resolución</dt>
+            <dd class="col-sm-9">
+                @if (Model.ResolvedAt.HasValue)
+                {
+                    @Model.ResolvedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") <span>UTC</span>
+                }
+                else
+                {
+                    <span class="text-muted">Pendiente de resolución</span>
+                }
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Index" class="btn btn-secondary">
+        Volver a mis solicitudes
+    </a>
+</div>

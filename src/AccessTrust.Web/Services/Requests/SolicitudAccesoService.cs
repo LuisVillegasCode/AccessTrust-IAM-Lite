@@ -1,5 +1,6 @@
 using AccessTrust.Web.Data;
 using AccessTrust.Web.Models;
+using AccessTrust.Web.Services.Audit;
 using AccessTrust.Web.Services.Resources;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -10,13 +11,16 @@ public class SolicitudAccesoService : ISolicitudAccesoService
 {
     private readonly IMongoCollection<SolicitudAcceso> _solicitudes;
     private readonly IRecursoService _recursoService;
+    private readonly IAuditService _auditService;
 
     public SolicitudAccesoService(
         IMongoDatabase database,
-        IRecursoService recursoService)
+        IRecursoService recursoService,
+        IAuditService auditService)
     {
         _solicitudes = database.GetCollection<SolicitudAcceso>(MongoCollections.SolicitudesAcceso);
         _recursoService = recursoService;
+        _auditService = auditService;
     }
 
     public async Task<List<SolicitudAcceso>> GetByUsuarioAsync(string usuarioId)
@@ -110,6 +114,24 @@ public class SolicitudAccesoService : ISolicitudAccesoService
         }
 
         await _solicitudes.InsertOneAsync(solicitud);
+
+        await _auditService.RegistrarEventoAsync(
+            accion: "SOLICITUD_CREADA",
+            entidadTipo: "SolicitudAcceso",
+            resultado: ResultadoAuditoria.Exitoso,
+            actorUserId: solicitud.UsuarioId,
+            entidadId: solicitud.Id,
+            detalle: new Dictionary<string, string>
+            {
+                { "recurso_id", solicitud.RecursoId },
+                { "motivo", solicitud.Motivo },
+                { "duracion_solicitada_min", solicitud.DuracionSolicitadaMin.ToString() },
+                { "prioridad", solicitud.Prioridad },
+                { "estado", solicitud.Estado.ToString() },
+                { "recurso_nombre", recurso.Nombre },
+                { "sensibilidad", recurso.Sensibilidad.ToString() }
+            }
+        );
 
         return (true, "Solicitud creada correctamente.");
     }

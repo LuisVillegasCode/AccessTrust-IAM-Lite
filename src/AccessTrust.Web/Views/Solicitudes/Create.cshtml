@@ -1,0 +1,79 @@
+@model AccessTrust.Web.ViewModels.Requests.CrearSolicitudAccesoViewModel
+
+@{
+    ViewData["Title"] = "Nueva solicitud";
+}
+
+<h2>Nueva solicitud de acceso</h2>
+
+<p class="text-muted">
+    Solicita acceso temporal a un recurso digital protegido. La solicitud quedará pendiente hasta ser revisada por un aprobador.
+</p>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="RecursoId" class="form-label">Recurso solicitado</label>
+
+        <select asp-for="RecursoId"
+                asp-items="Model.RecursosDisponibles"
+                class="form-select">
+            <option value="">-- Seleccione un recurso --</option>
+        </select>
+
+        <span asp-validation-for="RecursoId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Motivo" class="form-label">Motivo de la solicitud</label>
+
+        <textarea asp-for="Motivo"
+                  class="form-control"
+                  rows="4"
+                  placeholder="Explique brevemente por qué necesita acceder al recurso."></textarea>
+
+        <span asp-validation-for="Motivo" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DuracionSolicitadaMin" class="form-label">Duración solicitada en minutos</label>
+
+        <input asp-for="DuracionSolicitadaMin"
+               class="form-control"
+               type="number"
+               min="1"
+               max="480" />
+
+        <div class="form-text">
+            La duración final puede ser ajustada por el aprobador según la política del recurso.
+        </div>
+
+        <span asp-validation-for="DuracionSolicitadaMin" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Prioridad" class="form-label">Prioridad</label>
+
+        <select asp-for="Prioridad"
+                asp-items="Model.PrioridadesDisponibles"
+                class="form-select">
+        </select>
+
+        <span asp-validation-for="Prioridad" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Enviar solicitud
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
