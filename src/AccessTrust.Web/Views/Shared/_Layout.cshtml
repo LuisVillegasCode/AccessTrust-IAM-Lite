@@ -26,6 +26,49 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+
+                    <!-- INICIO DEL BLOQUE NUEVO -->
+                    <ul class="navbar-nav ms-auto">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item d-flex align-items-center me-3">
+                                <span class="navbar-text">
+                                    Usuario: <strong>@User.Identity.Name</strong>
+
+                                    @if (User.IsInRole("Administrador"))
+                                    {
+                                        <span class="badge bg-danger ms-2">Administrador</span>
+                                    }
+                                    else if (User.IsInRole("Aprobador"))
+                                    {
+                                        <span class="badge bg-warning text-dark ms-2">Aprobador</span>
+                                    }
+                                    else if (User.IsInRole("Solicitante"))
+                                    {
+                                        <span class="badge bg-primary ms-2">Solicitante</span>
+                                    }
+                                </span>
+                            </li>
+
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        Cerrar sesión
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="btn btn-outline-primary btn-sm" asp-controller="Account" asp-action="Login">
+                                    Iniciar sesión
+                                </a>
+                            </li>
+                        }
+                    </ul>
+
                 </div>
             </div>
         </nav>

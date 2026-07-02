@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.Audit;
 using AccessTrust.Web.Data;
 using AccessTrust.Web.Models;
 using Microsoft.AspNetCore.Identity;
@@ -12,11 +13,13 @@ public class AuthService : IAuthService
 
     private readonly IMongoCollection<Usuario> _usuarios;
     private readonly PasswordHasher<Usuario> _passwordHasher;
+    private readonly IAuditService _auditService;
 
-    public AuthService(IMongoDatabase database)
+    public AuthService(IMongoDatabase database, IAuditService auditService)
     {
         _usuarios = database.GetCollection<Usuario>(MongoCollections.Usuarios);
         _passwordHasher = new PasswordHasher<Usuario>();
+        _auditService = auditService;
     }
 
     public async Task<AuthResult> LoginAsync(string correo, string password)
@@ -27,27 +30,70 @@ public class AuthService : IAuthService
 
         if (usuario is null)
         {
+            await _auditService.RegistrarEventoAsync(
+                accion: "LOGIN_FALLIDO",
+                entidadTipo: "Usuario",
+                resultado: ResultadoAuditoria.Fallido,
+                detalle: new Dictionary<string, string>
+                {
+                    { "correo", correo },
+                    { "motivo", "usuario_no_encontrado" }
+                }
+            );
+
             return AuthResult.Fail("Correo o contraseña incorrectos.");
         }
 
         if (usuario.Estado == EstadoCuenta.Inactivo)
         {
+            await _auditService.RegistrarEventoAsync(
+                accion: "LOGIN_FALLIDO",
+                entidadTipo: "Usuario",
+                resultado: ResultadoAuditoria.Fallido,
+                actorUserId: usuario.Id,
+                entidadId: usuario.Id,
+                detalle: new Dictionary<string, string>
+                {
+                    { "correo", correo },
+                    { "motivo", "cuenta_inactiva" }
+                }
+            );
+
             return AuthResult.Fail("La cuenta se encuentra inactiva.");
         }
 
-        if (usuario.LockedUntil.HasValue)
+        if (usuario.Estado == EstadoCuenta.Bloqueado || usuario.LockedUntil.HasValue)
         {
-            if (usuario.LockedUntil.Value > DateTime.UtcNow)
+            if (usuario.LockedUntil.HasValue && usuario.LockedUntil.Value <= DateTime.UtcNow)
             {
+                await DesbloquearCuentaAsync(usuario.Id!);
+
+                usuario.Estado = EstadoCuenta.Activo;
+                usuario.LockedUntil = null;
+                usuario.FailedLoginCount = 0;
+            }
+            else
+            {
+                await _auditService.RegistrarEventoAsync(
+                    accion: "LOGIN_BLOQUEADO",
+                    entidadTipo: "Usuario",
+                    resultado: ResultadoAuditoria.Denegado,
+                    actorUserId: usuario.Id,
+                    entidadId: usuario.Id,
+                    detalle: new Dictionary<string, string>
+                    {
+                        { "correo", correo },
+                        { "motivo", "cuenta_bloqueada" },
+                        { "locked_until", usuario.LockedUntil?.ToString("O") ?? "sin_fecha_definida" }
+                    }
+                );
+
                 return AuthResult.Fail(
-                    $"La cuenta está bloqueada temporalmente hasta {usuario.LockedUntil.Value:yyyy-MM-dd HH:mm:ss} UTC."
+                    usuario.LockedUntil.HasValue
+                        ? $"La cuenta está bloqueada temporalmente hasta {usuario.LockedUntil.Value:yyyy-MM-dd HH:mm:ss} UTC."
+                        : "La cuenta se encuentra bloqueada."
                 );
             }
-
-            await DesbloquearCuentaAsync(usuario.Id!);
-            usuario.Estado = EstadoCuenta.Activo;
-            usuario.LockedUntil = null;
-            usuario.FailedLoginCount = 0;
         }
 
         var resultadoPassword = _passwordHasher.VerifyHashedPassword(
@@ -58,7 +104,42 @@ public class AuthService : IAuthService
 
         if (resultadoPassword == PasswordVerificationResult.Failed)
         {
+            var nuevoConteo = usuario.FailedLoginCount + 1;
+
             await RegistrarIntentoFallidoAsync(usuario);
+
+            await _auditService.RegistrarEventoAsync(
+                accion: "LOGIN_FALLIDO",
+                entidadTipo: "Usuario",
+                resultado: ResultadoAuditoria.Fallido,
+                actorUserId: usuario.Id,
+                entidadId: usuario.Id,
+                detalle: new Dictionary<string, string>
+                {
+                    { "correo", correo },
+                    { "motivo", "password_incorrecto" },
+                    { "intentos_fallidos", nuevoConteo.ToString() }
+                }
+            );
+
+            if (nuevoConteo >= MaxIntentosFallidos)
+            {
+                await _auditService.RegistrarEventoAsync(
+                    accion: "LOGIN_BLOQUEADO",
+                    entidadTipo: "Usuario",
+                    resultado: ResultadoAuditoria.Denegado,
+                    actorUserId: usuario.Id,
+                    entidadId: usuario.Id,
+                    detalle: new Dictionary<string, string>
+                    {
+                        { "correo", correo },
+                        { "motivo", "max_intentos_fallidos" },
+                        { "intentos_fallidos", nuevoConteo.ToString() },
+                        { "bloqueo_minutos", TiempoBloqueo.TotalMinutes.ToString() }
+                    }
+                );
+            }
+
             return AuthResult.Fail("Correo o contraseña incorrectos.");
         }
 
@@ -67,6 +148,19 @@ public class AuthService : IAuthService
         usuario.FailedLoginCount = 0;
         usuario.LockedUntil = null;
         usuario.Estado = EstadoCuenta.Activo;
+
+        await _auditService.RegistrarEventoAsync(
+            accion: "LOGIN_EXITOSO",
+            entidadTipo: "Usuario",
+            resultado: ResultadoAuditoria.Exitoso,
+            actorUserId: usuario.Id,
+            entidadId: usuario.Id,
+            detalle: new Dictionary<string, string>
+            {
+                { "correo", correo },
+                { "roles", string.Join(",", usuario.Roles) }
+            }
+        );
 
         return AuthResult.Ok(usuario);
     }

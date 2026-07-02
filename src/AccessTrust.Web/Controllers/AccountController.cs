@@ -99,17 +99,17 @@ public class AccountController : Controller
     {
         if (roles.Contains("Administrador"))
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Administrador", "Dashboard");
         }
 
         if (roles.Contains("Aprobador"))
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Aprobador", "Dashboard");
         }
 
         if (roles.Contains("Solicitante"))
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Solicitante", "Dashboard");
         }
 
         return RedirectToAction("Index", "Home");

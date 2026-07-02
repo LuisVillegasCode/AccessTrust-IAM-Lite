@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.Audit;
 using AccessTrust.Web.Services.Auth;
 using AccessTrust.Web.Data;
 using AccessTrust.Web.Settings;
@@ -63,6 +64,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Services.AddScoped<IAuditService, AuditService>();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
