@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.Credentials;
 using AccessTrust.Web.Services.Requests;
 using AccessTrust.Web.Services.Policies;
 using AccessTrust.Web.Services.Resources;
@@ -72,6 +73,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IPoliticaAccesoService, PoliticaAccesoService>();
 builder.Services.AddScoped<IRecursoService, RecursoService>();
 builder.Services.AddScoped<ISolicitudAccesoService, SolicitudAccesoService>();
+builder.Services.AddScoped<ICredencialTemporalService, CredencialTemporalService>();
 
 var app = builder.Build();
 
