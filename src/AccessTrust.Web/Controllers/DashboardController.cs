@@ -6,6 +6,26 @@ namespace AccessTrust.Web.Controllers;
 [Authorize]
 public class DashboardController : Controller
 {
+    public IActionResult Index()
+    {
+        if (User.IsInRole("Administrador"))
+        {
+            return RedirectToAction(nameof(Administrador));
+        }
+
+        if (User.IsInRole("Aprobador"))
+        {
+            return RedirectToAction(nameof(Aprobador));
+        }
+
+        if (User.IsInRole("Solicitante"))
+        {
+            return RedirectToAction(nameof(Solicitante));
+        }
+
+        return RedirectToAction("AccessDenied", "Account");
+    }
+
     [Authorize(Roles = "Solicitante")]
     public IActionResult Solicitante()
     {

@@ -76,7 +76,7 @@ public class AccountController : Controller
             return Redirect(model.ReturnUrl);
         }
 
-        return RedirectByRole(usuario.Roles);
+        return RedirectToAction("Index", "Dashboard");
     }
 
     [HttpPost]
@@ -93,25 +93,5 @@ public class AccountController : Controller
     public IActionResult AccessDenied()
     {
         return View();
-    }
-
-    private IActionResult RedirectByRole(List<string> roles)
-    {
-        if (roles.Contains("Administrador"))
-        {
-            return RedirectToAction("Administrador", "Dashboard");
-        }
-
-        if (roles.Contains("Aprobador"))
-        {
-            return RedirectToAction("Aprobador", "Dashboard");
-        }
-
-        if (roles.Contains("Solicitante"))
-        {
-            return RedirectToAction("Solicitante", "Dashboard");
-        }
-
-        return RedirectToAction("Index", "Home");
     }
 }
