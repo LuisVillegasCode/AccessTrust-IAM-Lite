@@ -25,4 +25,7 @@ public class Recurso
     public string? PoliticaId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonIgnoreIfNull]
+    public DateTime? UpdatedAt { get; set; }
 }

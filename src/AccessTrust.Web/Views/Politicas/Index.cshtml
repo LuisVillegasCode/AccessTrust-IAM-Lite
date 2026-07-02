@@ -1,0 +1,79 @@
+@model List<AccessTrust.Web.Models.PoliticaAcceso>
+
+@{
+    ViewData["Title"] = "Políticas de acceso";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Políticas de acceso</h2>
+        <p class="text-muted mb-0">
+            Configuración de reglas por nivel de sensibilidad.
+        </p>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No hay políticas registradas.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Sensibilidad</th>
+                <th>Duración máxima</th>
+                <th>OTP</th>
+                <th>Usos máximos</th>
+                <th>Aprobación</th>
+                <th>Intentos OTP</th>
+                <th style="width: 120px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var politica in Model)
+            {
+                <tr>
+                    <td>@politica.Nombre</td>
+                    <td>
+                        <span class="badge bg-secondary">
+                            @politica.Sensibilidad
+                        </span>
+                    </td>
+                    <td>@politica.DuracionMaxMin min</td>
+                    <td>
+                        @if (politica.RequiereOtp)
+                        {
+                            <span class="badge bg-warning text-dark">Sí</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-dark">No</span>
+                        }
+                    </td>
+                    <td>@politica.MaxUsos</td>
+                    <td>
+                        @if (politica.RequiereAprobacion)
+                        {
+                            <span class="badge bg-success">Sí</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">No</span>
+                        }
+                    </td>
+                    <td>@politica.IntentosOtpMax</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@politica.Id" class="btn btn-sm btn-outline-primary">
+                            Editar
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

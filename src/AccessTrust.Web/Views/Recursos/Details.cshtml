@@ -1,0 +1,66 @@
+@model AccessTrust.Web.Models.Recurso
+
+@{
+    ViewData["Title"] = "Detalle del recurso";
+}
+
+<h2>Detalle del recurso digital</h2>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Nombre</dt>
+            <dd class="col-sm-9">@Model.Nombre</dd>
+
+            <dt class="col-sm-3">Tipo</dt>
+            <dd class="col-sm-9">@Model.Tipo</dd>
+
+            <dt class="col-sm-3">Sensibilidad</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-secondary">@Model.Sensibilidad</span>
+            </dd>
+
+            <dt class="col-sm-3">Estado</dt>
+            <dd class="col-sm-9">
+                @if (Model.Activo)
+                {
+                    <span class="badge bg-success">Activo</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactivo</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Responsable Id</dt>
+            <dd class="col-sm-9">@Model.ResponsableId</dd>
+
+            <dt class="col-sm-3">Política Id</dt>
+            <dd class="col-sm-9">@Model.PoliticaId</dd>
+
+            <dt class="col-sm-3">Fecha de creación</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
+            <dt class="col-sm-3">Última modificación</dt>
+            <dd class="col-sm-9">
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    @Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") <span>UTC</span>
+                }
+                else
+                {
+                    <span class="text-muted">Sin modificaciones registradas</span>
+                }
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+        Editar
+    </a>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Volver
+    </a>
+</div>

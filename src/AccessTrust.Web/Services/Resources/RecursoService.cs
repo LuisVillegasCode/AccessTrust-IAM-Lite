@@ -73,7 +73,8 @@ public class RecursoService : IRecursoService
             .Set(r => r.Tipo, recurso.Tipo)
             .Set(r => r.Sensibilidad, recurso.Sensibilidad)
             .Set(r => r.Activo, recurso.Activo)
-            .Set(r => r.PoliticaId, politica?.Id);
+            .Set(r => r.PoliticaId, politica?.Id)
+            .Set(r => r.UpdatedAt, DateTime.UtcNow);
 
         var result = await _recursos.UpdateOneAsync(
             r => r.Id == id,

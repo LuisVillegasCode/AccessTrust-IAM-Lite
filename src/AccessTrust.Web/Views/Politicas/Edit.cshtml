@@ -1,0 +1,78 @@
+@model AccessTrust.Web.Models.PoliticaAcceso
+
+@{
+    ViewData["Title"] = "Editar política";
+}
+
+<h2>Editar política de acceso</h2>
+
+<p class="text-muted">
+    Modifica las reglas aplicadas a recursos según su nivel de sensibilidad.
+</p>
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="Sensibilidad" />
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="Nombre" class="form-label">Nombre de la política</label>
+        <input asp-for="Nombre" class="form-control" />
+        <span asp-validation-for="Nombre" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Sensibilidad</label>
+        <input value="@Model.Sensibilidad" class="form-control" disabled />
+        <div class="form-text">
+            La sensibilidad no se edita aquí porque cada política está asociada a un nivel fijo.
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DuracionMaxMin" class="form-label">Duración máxima en minutos</label>
+        <input asp-for="DuracionMaxMin" class="form-control" type="number" min="1" />
+        <span asp-validation-for="DuracionMaxMin" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="MaxUsos" class="form-label">Usos máximos</label>
+        <input asp-for="MaxUsos" class="form-control" type="number" min="1" />
+        <span asp-validation-for="MaxUsos" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="IntentosOtpMax" class="form-label">Intentos máximos de OTP</label>
+        <input asp-for="IntentosOtpMax" class="form-control" type="number" min="1" />
+        <span asp-validation-for="IntentosOtpMax" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="RequiereOtp" class="form-check-input" />
+        <label asp-for="RequiereOtp" class="form-check-label">
+            Requiere OTP
+        </label>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="RequiereAprobacion" class="form-check-input" />
+        <label asp-for="RequiereAprobacion" class="form-check-label">
+            Requiere aprobación
+        </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Guardar cambios
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
