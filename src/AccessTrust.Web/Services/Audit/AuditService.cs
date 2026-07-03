@@ -29,12 +29,20 @@ public class AuditService : IAuditService
         ResultadoAuditoria resultado,
         string? actorUserId = null,
         string? entidadId = null,
-        Dictionary<string, string>? detalle = null)
+        Dictionary<string, string>? detalle = null,
+        IClientSessionHandle? session = null)
     {
-        var ultimoEvento = await _eventos
-            .Find(Builders<EventoAuditoria>.Filter.Empty)
-            .SortByDescending(e => e.Seq)
-            .FirstOrDefaultAsync();
+        var filtro = Builders<EventoAuditoria>.Filter.Empty;
+
+        var ultimoEvento = session is null
+            ? await _eventos
+                .Find(filtro)
+                .SortByDescending(e => e.Seq)
+                .FirstOrDefaultAsync()
+            : await _eventos
+                .Find(session, filtro)
+                .SortByDescending(e => e.Seq)
+                .FirstOrDefaultAsync();
 
         var seq = ultimoEvento is null ? 1 : ultimoEvento.Seq + 1;
         var prevHash = ultimoEvento?.Hash ?? GenesisHash;
@@ -54,13 +62,19 @@ public class AuditService : IAuditService
 
         evento.Hash = CalcularHash(evento);
 
-        await _eventos.InsertOneAsync(evento);
+        if (session is null)
+        {
+            await _eventos.InsertOneAsync(evento);
+        }
+        else
+        {
+            await _eventos.InsertOneAsync(session, evento);
+        }
     }
 
     private string CalcularHash(EventoAuditoria evento)
     {
         var detalleOrdenado = new SortedDictionary<string, string>(evento.Detalle);
-
         var detalleJson = JsonSerializer.Serialize(detalleOrdenado);
 
         var contenido = string.Join("|",

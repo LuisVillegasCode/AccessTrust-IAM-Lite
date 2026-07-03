@@ -13,4 +13,17 @@ public interface ISolicitudAccesoService
     Task<SolicitudAcceso?> GetByIdAndUsuarioAsync(string id, string usuarioId);
 
     Task<(bool Success, string Message)> CreateAsync(SolicitudAcceso solicitud);
+
+    Task<(bool Success, string Message, string? TokenPlano, string? CredencialId)> AprobarAsync(
+        string solicitudId,
+        string aprobadorId,
+        int duracionAprobadaMin,
+        string? observacion
+    );
+
+    Task<(bool Success, string Message)> RechazarAsync(
+        string solicitudId,
+        string aprobadorId,
+        string observacion
+    );
 }

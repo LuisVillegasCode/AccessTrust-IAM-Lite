@@ -1,0 +1,149 @@
+@model AccessTrust.Web.ViewModels.Approvals.SolicitudAprobacionDetailsViewModel
+
+@{
+    ViewData["Title"] = "Revisar solicitud";
+}
+
+<h1>Revisar solicitud</h1>
+
+@if (TempData["Error"] is not null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card mb-4">
+    <div class="card-header">
+        Información de la solicitud
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Recurso</dt>
+            <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+            <dt class="col-sm-3">Tipo</dt>
+            <dd class="col-sm-9">@Model.RecursoTipo</dd>
+
+            <dt class="col-sm-3">Sensibilidad</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-secondary">@Model.RecursoSensibilidad</span>
+            </dd>
+
+            <dt class="col-sm-3">Usuario solicitante</dt>
+            <dd class="col-sm-9">@Model.UsuarioId</dd>
+
+            <dt class="col-sm-3">Motivo</dt>
+            <dd class="col-sm-9">@Model.Motivo</dd>
+
+            <dt class="col-sm-3">Duración solicitada</dt>
+            <dd class="col-sm-9">@Model.DuracionSolicitadaMin min</dd>
+
+            <dt class="col-sm-3">Prioridad</dt>
+            <dd class="col-sm-9">@Model.Prioridad</dd>
+
+            <dt class="col-sm-3">Fecha de solicitud</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Política aplicada
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Política</dt>
+            <dd class="col-sm-9">@Model.PoliticaNombre</dd>
+
+            <dt class="col-sm-3">Duración máxima</dt>
+            <dd class="col-sm-9">@Model.PoliticaDuracionMaxMin min</dd>
+
+            <dt class="col-sm-3">Máximo de usos</dt>
+            <dd class="col-sm-9">@Model.PoliticaMaxUsos</dd>
+
+            <dt class="col-sm-3">Requiere OTP</dt>
+            <dd class="col-sm-9">@(Model.PoliticaRequiereOtp ? "Sí" : "No")</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card border-success mb-4">
+            <div class="card-header text-success">
+                Aprobar solicitud
+            </div>
+            <div class="card-body">
+                <form asp-action="Aprobar" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="SolicitudId" value="@Model.Id" />
+
+                    <div class="mb-3">
+                        <label for="DuracionAprobadaMin" class="form-label">
+                            Duración aprobada en minutos
+                        </label>
+                        <input type="number"
+                               class="form-control"
+                               id="DuracionAprobadaMin"
+                               name="DuracionAprobadaMin"
+                               value="@Model.DuracionAprobadaMin"
+                               min="1"
+                               max="@Model.PoliticaDuracionMaxMin" />
+                        <div class="form-text">
+                            No debe superar la duración máxima permitida por la política.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ObservacionAprobacion" class="form-label">
+                            Observación
+                        </label>
+                        <textarea class="form-control"
+                                  id="ObservacionAprobacion"
+                                  name="Observacion"
+                                  rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        Aprobar y emitir credencial
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-danger mb-4">
+            <div class="card-header text-danger">
+                Rechazar solicitud
+            </div>
+            <div class="card-body">
+                <form asp-action="Rechazar" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="SolicitudId" value="@Model.Id" />
+
+                    <div class="mb-3">
+                        <label for="ObservacionRechazo" class="form-label">
+                            Motivo del rechazo
+                        </label>
+                        <textarea class="form-control"
+                                  id="ObservacionRechazo"
+                                  name="Observacion"
+                                  rows="5"
+                                  required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger">
+                        Rechazar solicitud
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a asp-action="Index" class="btn btn-secondary">
+    Volver
+</a>

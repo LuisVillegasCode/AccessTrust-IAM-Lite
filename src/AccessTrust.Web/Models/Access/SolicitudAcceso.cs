@@ -18,6 +18,9 @@ public class SolicitudAcceso
     public string Motivo { get; set; } = string.Empty;
 
     public int DuracionSolicitadaMin { get; set; }
+    
+    [BsonIgnoreIfNull]
+    public int? DuracionAprobadaMin { get; set; }
 
     public string Prioridad { get; set; } = "Normal";
 

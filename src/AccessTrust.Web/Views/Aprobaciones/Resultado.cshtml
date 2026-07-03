@@ -1,0 +1,48 @@
+@model AccessTrust.Web.ViewModels.Approvals.ResultadoAprobacionViewModel
+
+@{
+    ViewData["Title"] = "Credencial emitida";
+}
+
+<h1>Credencial temporal emitida</h1>
+
+<div class="alert alert-success">
+    La solicitud fue aprobada y se generó una credencial temporal.
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Datos de la credencial
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Solicitud</dt>
+            <dd class="col-sm-9">@Model.SolicitudId</dd>
+
+            <dt class="col-sm-3">Credencial</dt>
+            <dd class="col-sm-9">@Model.CredencialId</dd>
+
+            <dt class="col-sm-3">Recurso</dt>
+            <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+            <dt class="col-sm-3">Expira</dt>
+            <dd class="col-sm-9">@Model.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
+
+            <dt class="col-sm-3">Máximo de usos</dt>
+            <dd class="col-sm-9">@Model.MaxUsos</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="alert alert-warning">
+    Copia este token ahora. Por seguridad, el sistema solo lo muestra una vez.
+</div>
+
+<div class="mb-4">
+    <label class="form-label">Token temporal</label>
+    <textarea class="form-control font-monospace" rows="3" readonly>@Model.TokenPlano</textarea>
+</div>
+
+<a asp-action="Index" class="btn btn-primary">
+    Volver a solicitudes pendientes
+</a>
