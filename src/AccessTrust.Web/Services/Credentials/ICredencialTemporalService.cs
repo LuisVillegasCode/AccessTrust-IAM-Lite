@@ -15,4 +15,8 @@ public interface ICredencialTemporalService
     Task<CredencialTemporal?> GetByIdAsync(string id);
 
     Task<List<CredencialTemporal>> GetByUsuarioAsync(string usuarioId);
+    Task<ValidacionCredencialResult> ValidarTokenAsync(
+    string recursoId,
+    string tokenPlano
+    );
 }

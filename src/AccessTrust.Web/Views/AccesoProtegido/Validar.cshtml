@@ -1,0 +1,63 @@
+@model AccessTrust.Web.ViewModels.AccessValidation.ValidarCredencialViewModel
+
+@{
+    ViewData["Title"] = "Validar acceso";
+}
+
+<h1>Validar acceso temporal</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Recurso solicitado
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Recurso</dt>
+            <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+            <dt class="col-sm-3">Tipo</dt>
+            <dd class="col-sm-9">@Model.RecursoTipo</dd>
+
+            <dt class="col-sm-3">Sensibilidad</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-secondary">
+                    @Model.RecursoSensibilidad
+                </span>
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<form asp-action="Validar" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="RecursoId" />
+    <input type="hidden" asp-for="RecursoNombre" />
+    <input type="hidden" asp-for="RecursoTipo" />
+    <input type="hidden" asp-for="RecursoSensibilidad" />
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="TokenPlano" class="form-label">
+            Token temporal
+        </label>
+        <textarea asp-for="TokenPlano"
+                  class="form-control font-monospace"
+                  rows="3"
+                  placeholder="Pega aquí el token temporal emitido al aprobar la solicitud"></textarea>
+        <span asp-validation-for="TokenPlano" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Validar acceso
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Volver
+    </a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
