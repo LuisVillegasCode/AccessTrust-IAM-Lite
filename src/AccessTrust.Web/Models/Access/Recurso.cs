@@ -28,4 +28,7 @@ public class Recurso
 
     [BsonIgnoreIfNull]
     public DateTime? UpdatedAt { get; set; }
+
+    [BsonIgnoreIfNull]
+    public string? UrlExterna { get; set; }
 }

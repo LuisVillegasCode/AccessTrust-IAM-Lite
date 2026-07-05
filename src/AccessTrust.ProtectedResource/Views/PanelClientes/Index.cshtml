@@ -1,0 +1,61 @@
+@model AccessTrust.ProtectedResource.ViewModels.PanelClientesAccessViewModel
+
+@{
+    ViewData["Title"] = "Panel restringido de clientes";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Panel restringido de clientes</h4>
+        </div>
+
+        <div class="card-body">
+            <p class="text-muted">
+                Este recurso representa una aplicación externa protegida. 
+                No consulta MongoDB directamente; para validar el acceso enviará el token al IAM.
+            </p>
+
+            <dl class="row">
+                <dt class="col-sm-3">Recurso</dt>
+                <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+                <dt class="col-sm-3">Tipo</dt>
+                <dd class="col-sm-9">@Model.RecursoTipo</dd>
+
+                <dt class="col-sm-3">Sensibilidad</dt>
+                <dd class="col-sm-9">
+                    <span class="badge bg-danger">@Model.RecursoSensibilidad</span>
+                </dd>
+
+                <dt class="col-sm-3">RecursoId</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.RecursoId</code>
+                </dd>
+            </dl>
+
+            <hr />
+
+            <form asp-controller="PanelClientes" asp-action="Validar" method="post">
+                <input type="hidden" asp-for="RecursoId" />
+                <input type="hidden" asp-for="RecursoNombre" />
+                <input type="hidden" asp-for="RecursoTipo" />
+                <input type="hidden" asp-for="RecursoSensibilidad" />
+
+                <div class="mb-3">
+                    <label asp-for="TokenPlano" class="form-label">
+                        Token temporal
+                    </label>
+                    <textarea asp-for="TokenPlano"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Pegue aquí el token temporal emitido por AccessTrust IAM"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Validar acceso con IAM
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

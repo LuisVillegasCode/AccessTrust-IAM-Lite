@@ -43,6 +43,22 @@
     <textarea class="form-control font-monospace" rows="3" readonly>@Model.TokenPlano</textarea>
 </div>
 
+@if (!string.IsNullOrWhiteSpace(Model.UrlRecursoExterno))
+{
+    <div class="alert alert-info mt-3">
+        <strong>Recurso externo disponible.</strong>
+        El token temporal fue preparado para enviarse automáticamente al recurso protegido simulado.
+    </div>
+
+    <div class="mb-4">
+        <a href="@Model.UrlRecursoExterno"
+           class="btn btn-success"
+           target="_blank"
+           rel="noopener noreferrer">
+            Abrir recurso externo
+        </a>
+    </div>
+}
 <a asp-action="Index" class="btn btn-primary">
     Volver a solicitudes pendientes
 </a>

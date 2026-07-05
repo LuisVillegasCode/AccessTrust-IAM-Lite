@@ -17,6 +17,7 @@ public class AprobacionesController : Controller
     private readonly IRecursoService _recursoService;
     private readonly IPoliticaAccesoService _politicaAccesoService;
     private readonly ICredencialTemporalService _credencialTemporalService;
+    private const string ExternalTokenCookieName = "AccessTrust.ExternalToken";
 
     public AprobacionesController(
         ISolicitudAccesoService solicitudAccesoService,
@@ -156,6 +157,28 @@ public class AprobacionesController : Controller
         var recurso = solicitud is null
             ? null
             : await _recursoService.GetByIdAsync(solicitud.RecursoId);
+        
+        string? urlRecursoExterno = null;
+        if (
+            recurso is not null &&
+            !string.IsNullOrWhiteSpace(recurso.UrlExterna)
+        )
+        {
+            Response.Cookies.Append(
+                ExternalTokenCookieName,
+                tokenPlano,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
+                    Path = "/",
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(5)
+                }
+            );
+
+            urlRecursoExterno = recurso.UrlExterna;
+        }
 
         var viewModel = new ResultadoAprobacionViewModel
         {
@@ -164,7 +187,8 @@ public class AprobacionesController : Controller
             TokenPlano = tokenPlano,
             RecursoNombre = recurso?.Nombre ?? "Recurso no disponible",
             ExpiresAt = credencial?.ExpiresAt ?? DateTime.UtcNow,
-            MaxUsos = credencial?.MaxUsos ?? 0
+            MaxUsos = credencial?.MaxUsos ?? 0,
+            UrlRecursoExterno = urlRecursoExterno
         };
 
         return View("Resultado", viewModel);

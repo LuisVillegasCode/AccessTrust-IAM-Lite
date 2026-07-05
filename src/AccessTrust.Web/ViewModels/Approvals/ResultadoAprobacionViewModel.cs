@@ -13,4 +13,6 @@ public class ResultadoAprobacionViewModel
     public DateTime ExpiresAt { get; set; }
 
     public int MaxUsos { get; set; }
+    
+    public string? UrlRecursoExterno { get; set; }
 }
