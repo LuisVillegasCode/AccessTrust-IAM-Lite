@@ -1,0 +1,139 @@
+@model AccessTrust.Web.ViewModels.Audit.EventoAuditoriaDetailsViewModel
+
+@{
+    ViewData["Title"] = "Detalle de evento de auditoría";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Detalle de evento de auditoría</h4>
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Seq</dt>
+                <dd class="col-sm-9">
+                    <strong>@Model.Seq</strong>
+                </dd>
+
+                <dt class="col-sm-3">Acción</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.Accion</code>
+                </dd>
+
+                <dt class="col-sm-3">Resultado</dt>
+                <dd class="col-sm-9">
+                    @if (Model.Resultado.ToString() == "Exitoso" || Model.Resultado.ToString() == "Permitido")
+                    {
+                        <span class="badge bg-success">@Model.Resultado</span>
+                    }
+                    else if (Model.Resultado.ToString() == "Denegado")
+                    {
+                        <span class="badge bg-danger">@Model.Resultado</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">@Model.Resultado</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">ActorUserId</dt>
+                <dd class="col-sm-9">
+                    @if (string.IsNullOrWhiteSpace(Model.ActorUserId))
+                    {
+                        <span class="text-muted">Sistema / Anónimo</span>
+                    }
+                    else
+                    {
+                        <code>@Model.ActorUserId</code>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Entidad</dt>
+                <dd class="col-sm-9">
+                    <strong>@Model.EntidadTipo</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.EntidadId))
+                    {
+                        <br />
+                        <code>@Model.EntidadId</code>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Fecha UTC</dt>
+                <dd class="col-sm-9">
+                    @Model.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                </dd>
+            </dl>
+
+            <hr />
+
+            <h5>Detalle del evento</h5>
+
+            @if (Model.Detalle.Count == 0)
+            {
+                <div class="alert alert-info">
+                    Este evento no tiene detalle adicional.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Campo</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Detalle)
+                            {
+                                <tr>
+                                    <td>
+                                        <code>@item.Key</code>
+                                    </td>
+                                    <td>
+                                        @item.Value
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <hr />
+
+            <h5>Integridad del evento</h5>
+
+            <div class="mb-3">
+                <label class="form-label">PrevHash</label>
+                <textarea class="form-control font-monospace" rows="3" readonly>@Model.PrevHash</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Hash</label>
+                <textarea class="form-control font-monospace" rows="3" readonly>@Model.Hash</textarea>
+            </div>
+
+            <div class="alert alert-secondary">
+                Estos valores forman parte de la cadena de auditoría. Si un evento anterior o el contenido de este evento se altera manualmente, la verificación de integridad debe detectar la inconsistencia.
+            </div>
+
+            <div class="d-flex gap-2">
+                <a asp-controller="Auditoria"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+                    Volver a auditoría
+                </a>
+
+                <a asp-controller="Auditoria"
+                   asp-action="VerificarIntegridad"
+                   class="btn btn-outline-primary">
+                    Verificar integridad
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

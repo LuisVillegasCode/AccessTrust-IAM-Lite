@@ -14,4 +14,7 @@ public interface IAuditService
         Dictionary<string, string>? detalle = null,
         IClientSessionHandle? session = null
     );
+    Task<List<EventoAuditoria>> ListarEventosAsync(AuditoriaFiltro filtro);
+    Task<EventoAuditoria?> GetByIdAsync(string id);
+    Task<IntegridadAuditoriaResult> VerificarIntegridadAsync();
 }

@@ -1,0 +1,205 @@
+@model AccessTrust.Web.ViewModels.Audit.AuditoriaIndexViewModel
+
+@{
+    ViewData["Title"] = "Auditoría";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Auditoría del sistema</h2>
+            <p class="text-muted mb-0">
+                Consulta de eventos registrados por AccessTrust IAM Lite.
+            </p>
+        </div>
+
+        <a asp-controller="Auditoria"
+           asp-action="VerificarIntegridad"
+           class="btn btn-outline-primary">
+            Verificar integridad
+        </a>
+    </div>
+
+    @if (TempData["Error"] is not null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <strong>Filtros de búsqueda</strong>
+        </div>
+
+        <div class="card-body">
+            <form asp-controller="Auditoria" asp-action="Index" method="get">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label asp-for="Accion" class="form-label">Acción</label>
+                        <input asp-for="Accion"
+                               class="form-control"
+                               placeholder="Ej: LOGIN_EXITOSO" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Resultado" class="form-label">Resultado</label>
+                        <select asp-for="Resultado" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="Exitoso">Exitoso</option>
+                            <option value="Fallido">Fallido</option>
+                            <option value="Permitido">Permitido</option>
+                            <option value="Denegado">Denegado</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="ActorUserId" class="form-label">ActorUserId</label>
+                        <input asp-for="ActorUserId"
+                               class="form-control"
+                               placeholder="ObjectId del usuario" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="EntidadTipo" class="form-label">Entidad</label>
+                        <input asp-for="EntidadTipo"
+                               class="form-control"
+                               placeholder="Ej: CredencialTemporal" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="FechaDesde" class="form-label">Fecha desde</label>
+                        <input asp-for="FechaDesde"
+                               type="datetime-local"
+                               class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="FechaHasta" class="form-label">Fecha hasta</label>
+                        <input asp-for="FechaHasta"
+                               type="datetime-local"
+                               class="form-control" />
+                    </div>
+
+                    <div class="col-md-6 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            Aplicar filtros
+                        </button>
+
+                        <a asp-controller="Auditoria"
+                           asp-action="Index"
+                           class="btn btn-secondary">
+                            Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Eventos.Count == 0)
+    {
+        <div class="alert alert-info">
+            No se encontraron eventos de auditoría con los filtros indicados.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>Eventos recientes</strong>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Seq</th>
+                            <th>Acción</th>
+                            <th>Resultado</th>
+                            <th>Actor</th>
+                            <th>Entidad</th>
+                            <th>Fecha UTC</th>
+                            <th>Hash</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var evento in Model.Eventos)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@evento.Seq</strong>
+                                </td>
+
+                                <td>
+                                    <code>@evento.Accion</code>
+                                </td>
+
+                                <td>
+                                    @if (evento.Resultado.ToString() == "Exitoso" || evento.Resultado.ToString() == "Permitido")
+                                    {
+                                        <span class="badge bg-success">@evento.Resultado</span>
+                                    }
+                                    else if (evento.Resultado.ToString() == "Denegado")
+                                    {
+                                        <span class="badge bg-danger">@evento.Resultado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">@evento.Resultado</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(evento.ActorUserId))
+                                    {
+                                        <span class="text-muted">Sistema / Anónimo</span>
+                                    }
+                                    else
+                                    {
+                                        <code>@evento.ActorUserId</code>
+                                    }
+                                </td>
+
+                                <td>
+                                    <strong>@evento.EntidadTipo</strong>
+                                    <br />
+                                    @if (!string.IsNullOrWhiteSpace(evento.EntidadId))
+                                    {
+                                        <small class="text-muted">
+                                            @evento.EntidadId
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">
+                                            Sin entidad asociada
+                                        </small>
+                                    }
+                                </td>
+
+                                <td>
+                                    @evento.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                                </td>
+
+                                <td>
+                                    <code>@evento.HashResumen</code>
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-controller="Auditoria"
+                                       asp-action="Details"
+                                       asp-route-id="@evento.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Ver detalle
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,123 @@
+@model List<AccessTrust.Web.ViewModels.Credentials.CredencialActivaListItemViewModel>
+
+@{
+    ViewData["Title"] = "Credenciales activas";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-1">Credenciales activas</h2>
+    <p class="text-muted">
+        Listado de credenciales temporales vigentes emitidas por AccessTrust IAM Lite.
+    </p>
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info">
+            No existen credenciales activas disponibles.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>Credenciales temporales vigentes</strong>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Credencial</th>
+                            <th>Usuario</th>
+                            <th>Recurso</th>
+                            <th>Sensibilidad</th>
+                            <th>Estado</th>
+                            <th>Usos</th>
+                            <th>Expira</th>
+                            <th>Externo</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <code>@item.CredencialId</code>
+                                </td>
+
+                                <td>
+                                    <code>@item.UsuarioId</code>
+                                </td>
+
+                                <td>
+                                    <strong>@item.RecursoNombre</strong>
+                                    <br />
+                                    <small class="text-muted">@item.RecursoTipo</small>
+                                </td>
+
+                                <td>
+                                    @if (item.RecursoSensibilidad == AccessTrust.Web.Models.SensibilidadRecurso.Alta)
+                                    {
+                                        <span class="badge bg-danger">Alta</span>
+                                    }
+                                    else if (item.RecursoSensibilidad == AccessTrust.Web.Models.SensibilidadRecurso.Media)
+                                    {
+                                        <span class="badge bg-warning text-dark">Media</span>
+                                    }
+                                    else if (item.RecursoSensibilidad.ToString() == "Critica")
+                                    {
+                                        <span class="badge bg-dark">Crítica</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Baja</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary">@item.Estado</span>
+                                </td>
+
+                                <td>
+                                    @item.UsosRealizados / @item.MaxUsos
+                                </td>
+
+                                <td>
+                                    @item.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
+                                </td>
+
+                                <td>
+                                    @if (item.TieneUrlExterna)
+                                    {
+                                        <span class="badge bg-info text-dark">Sí</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">No</span>
+                                    }
+                                </td>
+
+                                <td class="text-end">
+                                    @if (item.PuedeRevocar)
+                                    {
+                                        <a asp-controller="Credenciales"
+                                           asp-action="Revocar"
+                                           asp-route-id="@item.CredencialId"
+                                           class="btn btn-sm btn-outline-danger">
+                                            Revocar
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No disponible</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

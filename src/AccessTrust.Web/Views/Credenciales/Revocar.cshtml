@@ -1,0 +1,105 @@
+@model AccessTrust.Web.ViewModels.Credentials.RevocarCredencialViewModel
+
+@{
+    ViewData["Title"] = "Revocar credencial";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Revocar credencial temporal</h4>
+        </div>
+
+        <div class="card-body">
+            <div class="alert alert-warning">
+                Esta acción cancelará la credencial temporal antes de su expiración.
+                Después de revocarla, el solicitante ya no podrá usarla para acceder al recurso.
+            </div>
+
+            <dl class="row">
+                <dt class="col-sm-3">Credencial</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.CredencialId</code>
+                </dd>
+
+                <dt class="col-sm-3">Usuario</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.UsuarioId</code>
+                </dd>
+
+                <dt class="col-sm-3">Recurso</dt>
+                <dd class="col-sm-9">
+                    @Model.RecursoNombre
+                </dd>
+
+                <dt class="col-sm-3">Tipo</dt>
+                <dd class="col-sm-9">
+                    @Model.RecursoTipo
+                </dd>
+
+                <dt class="col-sm-3">Sensibilidad</dt>
+                <dd class="col-sm-9">
+                    <span class="badge bg-danger">@Model.RecursoSensibilidad</span>
+                </dd>
+
+                <dt class="col-sm-3">Estado actual</dt>
+                <dd class="col-sm-9">
+                    <span class="badge bg-primary">@Model.Estado</span>
+                </dd>
+
+                <dt class="col-sm-3">Usos</dt>
+                <dd class="col-sm-9">
+                    @Model.UsosRealizados / @Model.MaxUsos
+                </dd>
+
+                <dt class="col-sm-3">Expira</dt>
+                <dd class="col-sm-9">
+                    @Model.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
+                </dd>
+            </dl>
+
+            <hr />
+
+            <form asp-controller="Credenciales" asp-action="Revocar" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="CredencialId" />
+                <input type="hidden" asp-for="UsuarioId" />
+                <input type="hidden" asp-for="RecursoId" />
+                <input type="hidden" asp-for="RecursoNombre" />
+                <input type="hidden" asp-for="RecursoTipo" />
+                <input type="hidden" asp-for="RecursoSensibilidad" />
+                <input type="hidden" asp-for="Estado" />
+                <input type="hidden" asp-for="IssuedAt" />
+                <input type="hidden" asp-for="ExpiresAt" />
+                <input type="hidden" asp-for="UsosRealizados" />
+                <input type="hidden" asp-for="MaxUsos" />
+
+                <div class="mb-3">
+                    <label asp-for="MotivoRevocacion" class="form-label"></label>
+                    <textarea asp-for="MotivoRevocacion"
+                              class="form-control"
+                              rows="4"
+                              placeholder="Ejemplo: acceso ya no requerido, cambio de funciones, solicitud anulada, etc."></textarea>
+                    <span asp-validation-for="MotivoRevocacion" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        Confirmar revocación
+                    </button>
+
+                    <a asp-controller="Credenciales"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

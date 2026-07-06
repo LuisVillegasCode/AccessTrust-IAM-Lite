@@ -12,16 +12,162 @@ public class CredencialTemporalService : ICredencialTemporalService
 {
     private readonly IMongoCollection<CredencialTemporal> _credenciales;
     private readonly IAuditService _auditService;
+    private readonly IMongoClient _mongoClient;
 
     public CredencialTemporalService(
         IMongoDatabase database,
+        IMongoClient mongoClient,
         IAuditService auditService)
     {
         _credenciales = database.GetCollection<CredencialTemporal>(
             MongoCollections.CredencialesTemporales
         );
-
+        
+        _mongoClient = mongoClient;
         _auditService = auditService;
+    }
+
+    public async Task<RevocarCredencialResult> RevocarAsync(
+        string credencialId,
+        string actorUserId,
+        string motivoRevocacion)
+    {
+        if (!ObjectId.TryParse(credencialId, out _))
+        {
+            return RevocarCredencialResult.Fail("La credencial no tiene un identificador válido.");
+        }
+
+        if (!ObjectId.TryParse(actorUserId, out _))
+        {
+            return RevocarCredencialResult.Fail("El usuario que revoca no tiene un identificador válido.");
+        }
+
+        if (string.IsNullOrWhiteSpace(motivoRevocacion))
+        {
+            return RevocarCredencialResult.Fail("El motivo de revocación es obligatorio.");
+        }
+
+        var motivoNormalizado = motivoRevocacion.Trim();
+
+        if (motivoNormalizado.Length < 5 || motivoNormalizado.Length > 300)
+        {
+            return RevocarCredencialResult.Fail("El motivo debe tener entre 5 y 300 caracteres.");
+        }
+
+        var credencial = await _credenciales
+            .Find(c => c.Id == credencialId)
+            .FirstOrDefaultAsync();
+
+        if (credencial is null)
+        {
+            return RevocarCredencialResult.Fail("La credencial temporal no existe.");
+        }
+
+        if (credencial.Estado != EstadoCredencial.Activa)
+        {
+            return RevocarCredencialResult.Fail(
+                $"Solo se pueden revocar credenciales activas. Estado actual: {credencial.Estado}."
+            );
+        }
+
+        if (credencial.ExpiresAt <= DateTime.UtcNow)
+        {
+            return RevocarCredencialResult.Fail(
+                "La credencial temporal ya expiró y no puede ser revocada."
+            );
+        }
+
+        if (credencial.UsosRealizados >= credencial.MaxUsos)
+        {
+            return RevocarCredencialResult.Fail(
+                "La credencial temporal ya alcanzó el máximo de usos permitidos."
+            );
+        }
+
+        var revokedAt = DateTime.UtcNow;
+
+        using var session = await _mongoClient.StartSessionAsync();
+
+        try
+        {
+            session.StartTransaction();
+
+            var filtro = Builders<CredencialTemporal>.Filter.And(
+                Builders<CredencialTemporal>.Filter.Eq(c => c.Id, credencialId),
+                Builders<CredencialTemporal>.Filter.Eq(c => c.Estado, EstadoCredencial.Activa),
+                Builders<CredencialTemporal>.Filter.Gt(c => c.ExpiresAt, revokedAt),
+                Builders<CredencialTemporal>.Filter.Lt(c => c.UsosRealizados, credencial.MaxUsos)
+            );
+
+            var update = Builders<CredencialTemporal>.Update
+                .Set(c => c.Estado, EstadoCredencial.Revocada)
+                .Set(c => c.RevokedAt, revokedAt);
+
+            var result = await _credenciales.UpdateOneAsync(
+                session,
+                filtro,
+                update
+            );
+
+            if (result.ModifiedCount == 0)
+            {
+                await session.AbortTransactionAsync();
+
+                return RevocarCredencialResult.Fail(
+                    "No se pudo revocar la credencial. Es posible que ya no esté activa."
+                );
+            }
+
+            await _auditService.RegistrarEventoAsync(
+                accion: "CREDENCIAL_REVOCADA",
+                entidadTipo: "CredencialTemporal",
+                resultado: ResultadoAuditoria.Exitoso,
+                actorUserId: actorUserId,
+                entidadId: credencialId,
+                detalle: new Dictionary<string, string>
+                {
+                    { "usuario_id", credencial.UsuarioId },
+                    { "recurso_id", credencial.RecursoId },
+                    { "solicitud_id", credencial.SolicitudId },
+                    { "motivo_revocacion", motivoNormalizado },
+                    { "issued_at", credencial.IssuedAt.ToString("O") },
+                    { "expires_at", credencial.ExpiresAt.ToString("O") },
+                    { "revoked_at", revokedAt.ToString("O") },
+                    { "usos_realizados", credencial.UsosRealizados.ToString() },
+                    { "max_usos", credencial.MaxUsos.ToString() }
+                },
+                session: session
+            );
+
+            await session.CommitTransactionAsync();
+
+            return RevocarCredencialResult.Ok(
+                credencialId,
+                credencial.UsuarioId,
+                credencial.RecursoId,
+                revokedAt
+            );
+        }
+        catch
+        {
+            await session.AbortTransactionAsync();
+
+            return RevocarCredencialResult.Fail(
+                "Ocurrió un error al revocar la credencial temporal."
+            );
+        }
+    }
+
+    public async Task<List<CredencialTemporal>> GetActivasAsync()
+    {
+        return await _credenciales
+            .Find(c =>
+                c.Estado == EstadoCredencial.Activa &&
+                c.ExpiresAt > DateTime.UtcNow &&
+                c.UsosRealizados < c.MaxUsos
+            )
+            .SortByDescending(c => c.IssuedAt)
+            .ToListAsync();
     }
 
     public async Task<(bool Success, string Message, CredencialTemporal? Credencial, string? TokenPlano)> EmitirAsync(
