@@ -60,4 +60,58 @@ public class IamValidationClient : IIamValidationClient
             };
         }
     }
+    public async Task<ValidarTicketExternoResponse> ValidarTicketExternoAsync(
+    string recursoId,
+    string ticketPlano)
+    {
+        var request = new ValidarTicketExternoRequest
+        {
+            RecursoId = recursoId,
+            TicketPlano = ticketPlano
+        };
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/iam/validar-ticket-externo",
+                request
+            );
+
+            var result = await response.Content
+                .ReadFromJsonAsync<ValidarTicketExternoResponse>();
+
+            if (result is null)
+            {
+                return new ValidarTicketExternoResponse
+                {
+                    Permitido = false,
+                    Mensaje = "El IAM no devolvió una respuesta válida.",
+                    MotivoCodigo = "RESPUESTA_IAM_INVALIDA",
+                    RecursoId = recursoId
+                };
+            }
+
+            return result;
+        }
+        catch (HttpRequestException)
+        {
+            return new ValidarTicketExternoResponse
+            {
+                Permitido = false,
+                Mensaje = "No se pudo conectar con el IAM.",
+                MotivoCodigo = "IAM_NO_DISPONIBLE",
+                RecursoId = recursoId
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            return new ValidarTicketExternoResponse
+            {
+                Permitido = false,
+                Mensaje = "La consulta al IAM excedió el tiempo de espera.",
+                MotivoCodigo = "TIMEOUT_IAM",
+                RecursoId = recursoId
+            };
+        }
+    }
 }

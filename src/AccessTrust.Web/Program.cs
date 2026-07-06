@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.ExternalAccess;
 using AccessTrust.Web.Services.Credentials;
 using AccessTrust.Web.Services.Requests;
 using AccessTrust.Web.Services.Policies;
@@ -74,6 +75,7 @@ builder.Services.AddScoped<IPoliticaAccesoService, PoliticaAccesoService>();
 builder.Services.AddScoped<IRecursoService, RecursoService>();
 builder.Services.AddScoped<ISolicitudAccesoService, SolicitudAccesoService>();
 builder.Services.AddScoped<ICredencialTemporalService, CredencialTemporalService>();
+builder.Services.AddScoped<IExternalAccessTicketService, ExternalAccessTicketService>();
 
 var app = builder.Build();
 

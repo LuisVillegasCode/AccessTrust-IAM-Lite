@@ -17,7 +17,6 @@ public class AprobacionesController : Controller
     private readonly IRecursoService _recursoService;
     private readonly IPoliticaAccesoService _politicaAccesoService;
     private readonly ICredencialTemporalService _credencialTemporalService;
-    private const string ExternalTokenCookieName = "AccessTrust.ExternalToken";
 
     public AprobacionesController(
         ISolicitudAccesoService solicitudAccesoService,
@@ -143,13 +142,12 @@ public class AprobacionesController : Controller
             model.Observacion
         );
 
-        if (!resultado.Success || string.IsNullOrWhiteSpace(resultado.TokenPlano) || string.IsNullOrWhiteSpace(resultado.CredencialId))
+        if (!resultado.Success || string.IsNullOrWhiteSpace(resultado.CredencialId))
         {
             TempData["Error"] = resultado.Message;
             return RedirectToAction(nameof(Details), new { id = model.SolicitudId });
         }
 
-        var tokenPlano = resultado.TokenPlano!;
         var credencialId = resultado.CredencialId!;
 
         var credencial = await _credencialTemporalService.GetByIdAsync(credencialId);
@@ -157,38 +155,14 @@ public class AprobacionesController : Controller
         var recurso = solicitud is null
             ? null
             : await _recursoService.GetByIdAsync(solicitud.RecursoId);
-        
-        string? urlRecursoExterno = null;
-        if (
-            recurso is not null &&
-            !string.IsNullOrWhiteSpace(recurso.UrlExterna)
-        )
-        {
-            Response.Cookies.Append(
-                ExternalTokenCookieName,
-                tokenPlano,
-                new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = false,
-                    SameSite = SameSiteMode.Lax,
-                    Path = "/",
-                    Expires = DateTimeOffset.UtcNow.AddMinutes(5)
-                }
-            );
-
-            urlRecursoExterno = recurso.UrlExterna;
-        }
 
         var viewModel = new ResultadoAprobacionViewModel
         {
             SolicitudId = model.SolicitudId,
             CredencialId = credencialId,
-            TokenPlano = tokenPlano,
             RecursoNombre = recurso?.Nombre ?? "Recurso no disponible",
             ExpiresAt = credencial?.ExpiresAt ?? DateTime.UtcNow,
-            MaxUsos = credencial?.MaxUsos ?? 0,
-            UrlRecursoExterno = urlRecursoExterno
+            MaxUsos = credencial?.MaxUsos ?? 0
         };
 
         return View("Resultado", viewModel);

@@ -6,13 +6,9 @@ public class ResultadoAprobacionViewModel
 
     public string CredencialId { get; set; } = string.Empty;
 
-    public string TokenPlano { get; set; } = string.Empty;
-
     public string RecursoNombre { get; set; } = string.Empty;
 
     public DateTime ExpiresAt { get; set; }
 
     public int MaxUsos { get; set; }
-    
-    public string? UrlRecursoExterno { get; set; }
 }

@@ -1,0 +1,136 @@
+@model List<AccessTrust.Web.ViewModels.AccessValidation.MisAccesoActivoViewModel>
+
+@{
+    ViewData["Title"] = "Mis accesos activos";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Mis accesos activos</h2>
+            <p class="text-muted mb-0">
+                Aquí puedes consultar tus credenciales temporales vigentes y abrir recursos externos autorizados.
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Error"] is not null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (TempData["Success"] is not null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info">
+            No tienes credenciales temporales activas disponibles.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>Credenciales vigentes</strong>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Recurso</th>
+                            <th>Tipo</th>
+                            <th>Sensibilidad</th>
+                            <th>Estado</th>
+                            <th>Expira</th>
+                            <th>Usos</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var acceso in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@acceso.RecursoNombre</strong>
+                                    <br />
+                                    <small class="text-muted">
+                                        ID: @acceso.RecursoId
+                                    </small>
+                                </td>
+
+                                <td>@acceso.RecursoTipo</td>
+
+                                <td>
+                                    @if (acceso.RecursoSensibilidad.ToString() == "Alta")
+                                    {
+                                        <span class="badge bg-danger">Alta</span>
+                                    }
+                                    else if (acceso.RecursoSensibilidad.ToString() == "Media")
+                                    {
+                                        <span class="badge bg-warning text-dark">Media</span>
+                                    }
+                                    else if (acceso.RecursoSensibilidad.ToString() == "Critica")
+                                    {
+                                        <span class="badge bg-dark">Crítica</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Baja</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary">
+                                        @acceso.Estado
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @acceso.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
+                                </td>
+
+                                <td>
+                                    @acceso.UsosRealizados / @acceso.MaxUsos
+                                </td>
+
+                                <td class="text-end">
+                                    @if (acceso.TieneUrlExterna)
+                                    {
+                                        <form asp-controller="MisAccesos"
+                                              asp-action="AbrirExterno"
+                                              method="post"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="credencialId"
+                                                   value="@acceso.CredencialId" />
+
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                Abrir recurso externo
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Sin URL externa
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

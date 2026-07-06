@@ -1,64 +1,57 @@
 @model AccessTrust.Web.ViewModels.Approvals.ResultadoAprobacionViewModel
 
 @{
-    ViewData["Title"] = "Credencial emitida";
+    ViewData["Title"] = "Solicitud aprobada";
 }
 
-<h1>Credencial temporal emitida</h1>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">Solicitud resuelta correctamente</h4>
+        </div>
 
-<div class="alert alert-success">
-    La solicitud fue aprobada y se generó una credencial temporal.
-</div>
+        <div class="card-body">
+            <div class="alert alert-success">
+                La solicitud fue aprobada y se generó una credencial temporal para el solicitante.
+            </div>
 
-<div class="card mb-4">
-    <div class="card-header">
-        Datos de la credencial
+            <dl class="row">
+                <dt class="col-sm-3">Solicitud</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.SolicitudId</code>
+                </dd>
+
+                <dt class="col-sm-3">Credencial generada</dt>
+                <dd class="col-sm-9">
+                    <code>@Model.CredencialId</code>
+                </dd>
+
+                <dt class="col-sm-3">Recurso</dt>
+                <dd class="col-sm-9">
+                    @Model.RecursoNombre
+                </dd>
+
+                <dt class="col-sm-3">Expira</dt>
+                <dd class="col-sm-9">
+                    @Model.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
+                </dd>
+
+                <dt class="col-sm-3">Usos máximos</dt>
+                <dd class="col-sm-9">
+                    @Model.MaxUsos
+                </dd>
+            </dl>
+
+            <div class="alert alert-info mt-3">
+                El acceso al recurso externo debe realizarlo el solicitante desde
+                <strong>Mis accesos activos</strong>.
+            </div>
+
+            <a asp-controller="Aprobaciones"
+               asp-action="Index"
+               class="btn btn-primary">
+                Volver a solicitudes pendientes
+            </a>
+        </div>
     </div>
-    <div class="card-body">
-        <dl class="row">
-            <dt class="col-sm-3">Solicitud</dt>
-            <dd class="col-sm-9">@Model.SolicitudId</dd>
-
-            <dt class="col-sm-3">Credencial</dt>
-            <dd class="col-sm-9">@Model.CredencialId</dd>
-
-            <dt class="col-sm-3">Recurso</dt>
-            <dd class="col-sm-9">@Model.RecursoNombre</dd>
-
-            <dt class="col-sm-3">Expira</dt>
-            <dd class="col-sm-9">@Model.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
-
-            <dt class="col-sm-3">Máximo de usos</dt>
-            <dd class="col-sm-9">@Model.MaxUsos</dd>
-        </dl>
-    </div>
 </div>
-
-<div class="alert alert-warning">
-    Copia este token ahora. Por seguridad, el sistema solo lo muestra una vez.
-</div>
-
-<div class="mb-4">
-    <label class="form-label">Token temporal</label>
-    <textarea class="form-control font-monospace" rows="3" readonly>@Model.TokenPlano</textarea>
-</div>
-
-@if (!string.IsNullOrWhiteSpace(Model.UrlRecursoExterno))
-{
-    <div class="alert alert-info mt-3">
-        <strong>Recurso externo disponible.</strong>
-        El token temporal fue preparado para enviarse automáticamente al recurso protegido simulado.
-    </div>
-
-    <div class="mb-4">
-        <a href="@Model.UrlRecursoExterno"
-           class="btn btn-success"
-           target="_blank"
-           rel="noopener noreferrer">
-            Abrir recurso externo
-        </a>
-    </div>
-}
-<a asp-action="Index" class="btn btn-primary">
-    Volver a solicitudes pendientes
-</a>

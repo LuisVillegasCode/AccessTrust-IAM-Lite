@@ -10,8 +10,7 @@ public class PanelClientesController : Controller
     private const string RecursoNombre = "Panel restringido de clientes";
     private const string RecursoTipo = "Panel";
     private const string RecursoSensibilidad = "Alta";
-    private const string ExternalTokenCookieName = "AccessTrust.ExternalToken";
-
+    private const string ExternalTicketCookieName = "AccessTrust.ExternalTicket";
     private readonly IIamValidationClient _iamValidationClient;
 
     public PanelClientesController(IIamValidationClient iamValidationClient)
@@ -36,29 +35,50 @@ public class PanelClientesController : Controller
     [HttpGet]
     public async Task<IActionResult> Auto()
     {
-        var tokenPlano = Request.Cookies[ExternalTokenCookieName];
+        var ticketPlano = Request.Cookies[ExternalTicketCookieName];
 
-        if (string.IsNullOrWhiteSpace(tokenPlano))
+        if (string.IsNullOrWhiteSpace(ticketPlano))
         {
-            return Content(
-                "Acceso denegado: no se encontró el token temporal enviado por el IAM."
-            );
+            var modelSinTicket = new PanelClientesResultadoViewModel
+            {
+                Permitido = false,
+                Mensaje = "No se encontró el ticket externo enviado por el IAM.",
+                MotivoCodigo = "TICKET_EXTERNO_NO_ENCONTRADO",
+                RecursoId = RecursoId,
+                RecursoNombre = RecursoNombre,
+                RecursoTipo = RecursoTipo,
+                RecursoSensibilidad = RecursoSensibilidad
+            };
+
+            return View("Resultado", modelSinTicket);
         }
 
-        var resultado = await _iamValidationClient.ValidarCredencialAsync(
+        var resultado = await _iamValidationClient.ValidarTicketExternoAsync(
             RecursoId,
-            tokenPlano
+            ticketPlano
         );
 
-        if (!resultado.Permitido)
+        var model = new PanelClientesResultadoViewModel
         {
-            return Content($"Acceso denegado: {resultado.Mensaje}");
-        }
+            Permitido = resultado.Permitido,
+            Mensaje = resultado.Mensaje,
+            MotivoCodigo = resultado.MotivoCodigo,
+            RecursoId = resultado.RecursoId,
+            RecursoNombre = string.IsNullOrWhiteSpace(resultado.RecursoNombre)
+                ? RecursoNombre
+                : resultado.RecursoNombre,
+            RecursoTipo = string.IsNullOrWhiteSpace(resultado.RecursoTipo)
+                ? RecursoTipo
+                : resultado.RecursoTipo,
+            RecursoSensibilidad = string.IsNullOrWhiteSpace(resultado.RecursoSensibilidad)
+                ? RecursoSensibilidad
+                : resultado.RecursoSensibilidad,
+            CredencialId = resultado.CredencialId,
+            ExpiresAt = resultado.ExpiresAt,
+            UsosRealizados = resultado.UsosRealizados,
+            MaxUsos = resultado.MaxUsos
+        };
 
-        return Content(
-            $"Acceso concedido al {resultado.RecursoNombre}. " +
-            $"Usos: {resultado.UsosRealizados}/{resultado.MaxUsos}. " +
-            $"Expira: {resultado.ExpiresAt:yyyy-MM-dd HH:mm:ss} UTC."
-        );
+        return View("Resultado", model);
     }
 }

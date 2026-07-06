@@ -1,0 +1,175 @@
+@model AccessTrust.ProtectedResource.ViewModels.PanelClientesResultadoViewModel
+
+@{
+    ViewData["Title"] = Model.TituloResultado;
+}
+
+<div class="container mt-4">
+    @if (Model.Permitido)
+    {
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Acceso concedido</h4>
+            </div>
+
+            <div class="card-body">
+                <div class="alert alert-success">
+                    El IAM validó correctamente el ticket externo y autorizó el acceso al recurso.
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-3">Recurso</dt>
+                    <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+                    <dt class="col-sm-3">Tipo</dt>
+                    <dd class="col-sm-9">@Model.RecursoTipo</dd>
+
+                    <dt class="col-sm-3">Sensibilidad</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-danger">@Model.RecursoSensibilidad</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Credencial</dt>
+                    <dd class="col-sm-9">
+                        <code>@Model.CredencialId</code>
+                    </dd>
+
+                    <dt class="col-sm-3">Usos</dt>
+                    <dd class="col-sm-9">
+                        @Model.UsosRealizados / @Model.MaxUsos
+                    </dd>
+
+                    <dt class="col-sm-3">Expira</dt>
+                    <dd class="col-sm-9">
+                        @(Model.ExpiresAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "No disponible") UTC
+                    </dd>
+                </dl>
+
+                <hr />
+
+                <h5>Panel restringido de clientes</h5>
+
+                <p class="text-muted">
+                    Este contenido representa un recurso externo protegido. Solo se muestra porque
+                    AccessTrust IAM Lite autorizó el acceso mediante un ticket externo temporal.
+                </p>
+
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-muted">Clientes registrados</h6>
+                                <h3 class="mb-0">128</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-muted">Solicitudes activas</h6>
+                                <h3 class="mb-0">34</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-muted">Alertas KYC</h6>
+                                <h3 class="mb-0">7</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-muted">Riesgo alto</h6>
+                                <h3 class="mb-0">5</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Estado KYC</th>
+                                <th>Riesgo</th>
+                                <th>Última revisión</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cliente simulado 001</td>
+                                <td>Validado</td>
+                                <td><span class="badge bg-success">Bajo</span></td>
+                                <td>2026-07-05</td>
+                            </tr>
+                            <tr>
+                                <td>Cliente simulado 002</td>
+                                <td>En revisión</td>
+                                <td><span class="badge bg-warning text-dark">Medio</span></td>
+                                <td>2026-07-04</td>
+                            </tr>
+                            <tr>
+                                <td>Cliente simulado 003</td>
+                                <td>Observado</td>
+                                <td><span class="badge bg-danger">Alto</span></td>
+                                <td>2026-07-03</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-secondary mt-3">
+                    Los datos mostrados son simulados y tienen fines académicos.
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">Acceso denegado</h4>
+            </div>
+
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    El IAM no autorizó el acceso al recurso externo.
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-3">Mensaje</dt>
+                    <dd class="col-sm-9">@Model.Mensaje</dd>
+
+                    <dt class="col-sm-3">Código</dt>
+                    <dd class="col-sm-9">
+                        <code>@Model.MotivoCodigo</code>
+                    </dd>
+
+                    <dt class="col-sm-3">Recurso</dt>
+                    <dd class="col-sm-9">@Model.RecursoNombre</dd>
+
+                    <dt class="col-sm-3">RecursoId</dt>
+                    <dd class="col-sm-9">
+                        <code>@Model.RecursoId</code>
+                    </dd>
+                </dl>
+
+                <div class="alert alert-info mt-3">
+                    Para generar un nuevo ticket externo, vuelve al IAM e ingresa desde
+                    <strong>Mis accesos activos</strong>.
+                </div>
+
+                <a href="/" class="btn btn-secondary">
+                    Volver al inicio del recurso externo
+                </a>
+            </div>
+        </div>
+    }
+</div>

@@ -59,3 +59,11 @@ public enum SeveridadAlerta
     Alta,
     Critica
 }
+
+public enum EstadoTicketAccesoExterno
+{
+    Activo,
+    Usado,
+    Expirado,
+    Revocado
+}

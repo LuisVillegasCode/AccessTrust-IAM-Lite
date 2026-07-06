@@ -1,10 +1,12 @@
-namespace AccessTrust.Web.ViewModels.AccessValidation;
+namespace AccessTrust.ProtectedResource.ViewModels;
 
-public class ResultadoValidacionCredencialViewModel
+public class PanelClientesResultadoViewModel
 {
     public bool Permitido { get; set; }
 
     public string Mensaje { get; set; } = string.Empty;
+
+    public string MotivoCodigo { get; set; } = string.Empty;
 
     public string RecursoId { get; set; } = string.Empty;
 
@@ -21,4 +23,13 @@ public class ResultadoValidacionCredencialViewModel
     public int? UsosRealizados { get; set; }
 
     public int? MaxUsos { get; set; }
+
+    public bool TieneDatosDeAcceso =>
+        Permitido &&
+        !string.IsNullOrWhiteSpace(RecursoNombre) &&
+        UsosRealizados.HasValue &&
+        MaxUsos.HasValue;
+
+    public string TituloResultado =>
+        Permitido ? "Acceso concedido" : "Acceso denegado";
 }
