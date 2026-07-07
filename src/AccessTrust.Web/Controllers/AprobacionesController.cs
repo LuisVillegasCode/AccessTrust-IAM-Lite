@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AccessTrust.Web.Controllers;
 
-[Authorize(Roles = "Aprobador")]
+[Authorize(Roles = "Administrador,Aprobador")]
 public class AprobacionesController : Controller
 {
     private readonly ISolicitudAccesoService _solicitudAccesoService;
@@ -32,7 +32,20 @@ public class AprobacionesController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var solicitudes = await _solicitudAccesoService.GetPendientesAsync();
+        var revisorId = ObtenerUsuarioId();
+
+        if (string.IsNullOrWhiteSpace(revisorId))
+        {
+            return Unauthorized();
+        }
+
+        var esAdministrador = User.IsInRole("Administrador");
+
+        var solicitudes = await _solicitudAccesoService.GetPendientesParaRevisionAsync(
+            revisorId,
+            esAdministrador
+        );
+
         var viewModels = new List<SolicitudPendienteListItemViewModel>();
 
         foreach (var solicitud in solicitudes)
@@ -55,11 +68,39 @@ public class AprobacionesController : Controller
             });
         }
 
+        ViewBag.EsAdministrador = esAdministrador;
+
         return View(viewModels);
     }
 
     public async Task<IActionResult> Details(string id)
     {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return NotFound();
+        }
+
+        var revisorId = ObtenerUsuarioId();
+
+        if (string.IsNullOrWhiteSpace(revisorId))
+        {
+            return Unauthorized();
+        }
+
+        var esAdministrador = User.IsInRole("Administrador");
+
+        var permiso = await _solicitudAccesoService.PuedeRevisarSolicitudAsync(
+            id,
+            revisorId,
+            esAdministrador
+        );
+
+        if (!permiso.TienePermiso)
+        {
+            TempData["Error"] = permiso.Message;
+            return RedirectToAction(nameof(Index));
+        }
+
         var solicitud = await _solicitudAccesoService.GetByIdAsync(id);
 
         if (solicitud is null)
@@ -135,9 +176,12 @@ public class AprobacionesController : Controller
             return Unauthorized();
         }
 
+        var esAdministrador = User.IsInRole("Administrador");
+
         var resultado = await _solicitudAccesoService.AprobarAsync(
             model.SolicitudId,
             aprobadorId,
+            esAdministrador,
             model.DuracionAprobadaMin,
             model.Observacion
         );

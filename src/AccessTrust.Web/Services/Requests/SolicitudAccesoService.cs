@@ -11,6 +11,7 @@ namespace AccessTrust.Web.Services.Requests;
 public class SolicitudAccesoService : ISolicitudAccesoService
 {
     private readonly IMongoCollection<SolicitudAcceso> _solicitudes;
+    private readonly IMongoCollection<Recurso> _recursos;
     private readonly IRecursoService _recursoService;
     private readonly IPoliticaAccesoService _politicaAccesoService;
     private readonly IAuditService _auditService;
@@ -26,6 +27,7 @@ public class SolicitudAccesoService : ISolicitudAccesoService
         IAuditService auditService)
     {
         _solicitudes = database.GetCollection<SolicitudAcceso>(MongoCollections.SolicitudesAcceso);
+        _recursos = database.GetCollection<Recurso>(MongoCollections.Recursos);
         _mongoClient = mongoClient;
         _recursoService = recursoService;
         _politicaAccesoService = politicaAccesoService;
@@ -54,6 +56,44 @@ public class SolicitudAccesoService : ISolicitudAccesoService
             .ToListAsync();
     }
 
+    public async Task<List<SolicitudAcceso>> GetPendientesParaRevisionAsync(
+        string revisorId,
+        bool esAdministrador)
+    {
+        if (!ObjectId.TryParse(revisorId, out _))
+        {
+            return new List<SolicitudAcceso>();
+        }
+
+        if (esAdministrador)
+        {
+            return await GetPendientesAsync();
+        }
+
+        var recursosResponsable = await _recursos
+            .Find(r => r.ResponsableId == revisorId && r.Activo)
+            .Project(r => r.Id)
+            .ToListAsync();
+
+        var recursoIds = recursosResponsable
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .ToList();
+
+        if (!recursoIds.Any())
+        {
+            return new List<SolicitudAcceso>();
+        }
+
+        return await _solicitudes
+            .Find(s =>
+                s.Estado == EstadoSolicitud.Pendiente &&
+                recursoIds.Contains(s.RecursoId)
+            )
+            .SortBy(s => s.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task<SolicitudAcceso?> GetByIdAsync(string id)
     {
         if (!ObjectId.TryParse(id, out _))
@@ -64,6 +104,52 @@ public class SolicitudAccesoService : ISolicitudAccesoService
         return await _solicitudes
             .Find(s => s.Id == id)
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<(bool TienePermiso, string Message)> PuedeRevisarSolicitudAsync(
+        string solicitudId,
+        string revisorId,
+        bool esAdministrador)
+    {
+        if (!ObjectId.TryParse(solicitudId, out _) ||
+            !ObjectId.TryParse(revisorId, out var revisorObjectId))
+        {
+            return (false, "La solicitud o el revisor no tienen un identificador válido.");
+        }
+
+        var solicitud = await GetByIdAsync(solicitudId);
+
+        if (solicitud is null)
+        {
+            return (false, "La solicitud no existe.");
+        }
+
+        if (esAdministrador)
+        {
+            return (true, "El administrador tiene permiso global para revisar la solicitud.");
+        }
+
+        var recurso = await _recursos
+            .Find(r => r.Id == solicitud.RecursoId)
+            .FirstOrDefaultAsync();
+
+        if (recurso is null)
+        {
+            return (false, "El recurso asociado a la solicitud no existe.");
+        }
+
+        if (string.IsNullOrWhiteSpace(recurso.ResponsableId) ||
+            !ObjectId.TryParse(recurso.ResponsableId, out var responsableObjectId))
+        {
+            return (false, "El recurso no tiene un responsable válido asignado.");
+        }
+
+        if (responsableObjectId != revisorObjectId)
+        {
+            return (false, "No tienes permiso para revisar solicitudes de este recurso.");
+        }
+
+        return (true, "El aprobador tiene permiso para revisar la solicitud.");
     }
 
     public async Task<SolicitudAcceso?> GetByIdAndUsuarioAsync(string id, string usuarioId)
@@ -150,6 +236,7 @@ public class SolicitudAccesoService : ISolicitudAccesoService
     public async Task<(bool Success, string Message, string? TokenPlano, string? CredencialId)> AprobarAsync(
         string solicitudId,
         string aprobadorId,
+        bool esAdministrador,
         int duracionAprobadaMin,
         string? observacion)
     {
@@ -185,6 +272,32 @@ public class SolicitudAccesoService : ISolicitudAccesoService
         if (!recurso.Activo)
         {
             return (false, "No se puede aprobar una solicitud para un recurso inactivo.", null, null);
+        }
+
+        var permiso = await PuedeRevisarSolicitudAsync(
+            solicitudId,
+            aprobadorId,
+            esAdministrador
+        );
+
+        if (!permiso.TienePermiso)
+        {
+            await _auditService.RegistrarEventoAsync(
+                accion: "SOLICITUD_APROBACION_NO_AUTORIZADA",
+                entidadTipo: "SolicitudAcceso",
+                resultado: ResultadoAuditoria.Fallido,
+                actorUserId: aprobadorId,
+                entidadId: solicitudId,
+                detalle: new Dictionary<string, string>
+                {
+                    { "usuario_id", solicitud.UsuarioId },
+                    { "recurso_id", solicitud.RecursoId },
+                    { "recurso_nombre", recurso.Nombre },
+                    { "motivo_bloqueo", permiso.Message }
+                }
+            );
+
+            return (false, permiso.Message, null, null);
         }
 
         var politica = await _politicaAccesoService.GetBySensibilidadAsync(recurso.Sensibilidad);

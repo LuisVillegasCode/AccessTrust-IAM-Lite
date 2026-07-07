@@ -8,6 +8,17 @@ public interface ISolicitudAccesoService
 
     Task<List<SolicitudAcceso>> GetPendientesAsync();
 
+    Task<List<SolicitudAcceso>> GetPendientesParaRevisionAsync(
+        string revisorId,
+        bool esAdministrador
+    );
+
+    Task<(bool TienePermiso, string Message)> PuedeRevisarSolicitudAsync(
+        string solicitudId,
+        string revisorId,
+        bool esAdministrador
+    );
+
     Task<SolicitudAcceso?> GetByIdAsync(string id);
 
     Task<SolicitudAcceso?> GetByIdAndUsuarioAsync(string id, string usuarioId);
@@ -17,6 +28,7 @@ public interface ISolicitudAccesoService
     Task<(bool Success, string Message, string? TokenPlano, string? CredencialId)> AprobarAsync(
         string solicitudId,
         string aprobadorId,
+        bool esAdministrador,
         int duracionAprobadaMin,
         string? observacion
     );

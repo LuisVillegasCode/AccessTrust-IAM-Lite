@@ -197,11 +197,28 @@ public static class DataSeeder
         IMongoCollection<Usuario> usuarios,
         IMongoCollection<PoliticaAcceso> politicas)
     {
-        var admin = await usuarios.Find(u => u.Correo == "admin@accesstrust.local").FirstOrDefaultAsync();
+        var aprobador = await usuarios
+            .Find(u => u.Correo == "aprobador@accesstrust.local")
+            .FirstOrDefaultAsync();
 
-        var politicaBaja = await politicas.Find(p => p.Sensibilidad == SensibilidadRecurso.Baja).FirstOrDefaultAsync();
-        var politicaMedia = await politicas.Find(p => p.Sensibilidad == SensibilidadRecurso.Media).FirstOrDefaultAsync();
-        var politicaAlta = await politicas.Find(p => p.Sensibilidad == SensibilidadRecurso.Alta).FirstOrDefaultAsync();
+        if (aprobador is null || string.IsNullOrWhiteSpace(aprobador.Id))
+        {
+            throw new InvalidOperationException(
+                "No se encontró el usuario aprobador requerido para asignar responsables de recursos."
+            );
+        }
+
+        var politicaBaja = await politicas
+            .Find(p => p.Sensibilidad == SensibilidadRecurso.Baja)
+            .FirstOrDefaultAsync();
+
+        var politicaMedia = await politicas
+            .Find(p => p.Sensibilidad == SensibilidadRecurso.Media)
+            .FirstOrDefaultAsync();
+
+        var politicaAlta = await politicas
+            .Find(p => p.Sensibilidad == SensibilidadRecurso.Alta)
+            .FirstOrDefaultAsync();
 
         var recursosIniciales = new List<Recurso>
         {
@@ -211,7 +228,7 @@ public static class DataSeeder
                 Tipo = "Documento",
                 Sensibilidad = SensibilidadRecurso.Baja,
                 Activo = true,
-                ResponsableId = admin?.Id,
+                ResponsableId = aprobador.Id,
                 PoliticaId = politicaBaja?.Id,
                 CreatedAt = DateTime.UtcNow
             },
@@ -221,7 +238,7 @@ public static class DataSeeder
                 Tipo = "Reporte",
                 Sensibilidad = SensibilidadRecurso.Media,
                 Activo = true,
-                ResponsableId = admin?.Id,
+                ResponsableId = aprobador.Id,
                 PoliticaId = politicaMedia?.Id,
                 CreatedAt = DateTime.UtcNow
             },
@@ -231,7 +248,7 @@ public static class DataSeeder
                 Tipo = "Panel",
                 Sensibilidad = SensibilidadRecurso.Alta,
                 Activo = true,
-                ResponsableId = admin?.Id,
+                ResponsableId = aprobador.Id,
                 PoliticaId = politicaAlta?.Id,
                 CreatedAt = DateTime.UtcNow
             }
@@ -239,11 +256,29 @@ public static class DataSeeder
 
         foreach (var recurso in recursosIniciales)
         {
-            var existe = await recursos.Find(r => r.Nombre == recurso.Nombre).AnyAsync();
-            if (!existe)
+            var recursoExistente = await recursos
+                .Find(r => r.Nombre == recurso.Nombre)
+                .FirstOrDefaultAsync();
+
+            if (recursoExistente is null)
             {
                 await recursos.InsertOneAsync(recurso);
+                continue;
             }
+
+            var update = Builders<Recurso>.Update
+                .Set(r => r.Tipo, recurso.Tipo)
+                .Set(r => r.Sensibilidad, recurso.Sensibilidad)
+                .Set(r => r.Activo, recurso.Activo)
+                .Set(r => r.ResponsableId, recurso.ResponsableId)
+                .Set(r => r.PoliticaId, recurso.PoliticaId)
+                .Set(r => r.UpdatedAt, DateTime.UtcNow);
+
+            await recursos.UpdateOneAsync(
+                r => r.Id == recursoExistente.Id,
+                update
+            );
         }
     }
+
 }

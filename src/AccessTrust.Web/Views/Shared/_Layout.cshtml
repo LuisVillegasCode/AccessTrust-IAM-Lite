@@ -79,7 +79,7 @@
                                 </a>
                             </li>
                         }
-                        @if (User.IsInRole("Aprobador"))
+                        @if (User.IsInRole("Administrador") || User.IsInRole("Aprobador"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Aprobaciones" asp-action="Index">

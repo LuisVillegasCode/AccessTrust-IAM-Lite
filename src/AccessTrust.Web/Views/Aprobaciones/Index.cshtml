@@ -4,7 +4,22 @@
     ViewData["Title"] = "Solicitudes pendientes";
 }
 
+@{
+    var esAdministrador = ViewBag.EsAdministrador is bool valor && valor;
+}
+
 <h1>Solicitudes pendientes</h1>
+
+<p class="text-muted">
+    @if (esAdministrador)
+    {
+        <span>Vista global de solicitudes pendientes del sistema.</span>
+    }
+    else
+    {
+        <span>Solicitudes pendientes asociadas a recursos bajo tu responsabilidad.</span>
+    }
+</p>
 
 @if (TempData["Success"] is not null)
 {
