@@ -1,6 +1,7 @@
 using AccessTrust.Web.Models;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Driver;
+using AccessTrust.Web.Services.Security;
 
 namespace AccessTrust.Web.Data;
 
@@ -14,10 +15,11 @@ public static class DataSeeder
         var usuarios = database.GetCollection<Usuario>(MongoCollections.Usuarios);
         var politicas = database.GetCollection<PoliticaAcceso>(MongoCollections.PoliticasAcceso);
         var recursos = database.GetCollection<Recurso>(MongoCollections.Recursos);
+        var fieldEncryptionService = services.GetRequiredService<IFieldEncryptionService>();
 
         await SeedRolesAsync(roles);
         await SeedPoliticasAsync(politicas);
-        await SeedUsuariosAsync(usuarios);
+        await SeedUsuariosAsync(usuarios, fieldEncryptionService);
         await SeedRecursosAsync(recursos, usuarios, politicas);
     }
 
@@ -101,49 +103,75 @@ public static class DataSeeder
         }
     }
 
-    private static async Task SeedUsuariosAsync(IMongoCollection<Usuario> usuarios)
+    private static async Task SeedUsuariosAsync(
+        IMongoCollection<Usuario> usuarios,
+        IFieldEncryptionService fieldEncryptionService)
     {
         var hasher = new PasswordHasher<Usuario>();
 
         await CrearUsuarioSiNoExisteAsync(
             usuarios,
             hasher,
+            fieldEncryptionService,
             "Administrador AccessTrust",
             "admin@accesstrust.local",
             "Admin123*",
-            new List<string> { "Administrador" }
+            new List<string> { "Administrador" },
+            "70000001"
         );
 
         await CrearUsuarioSiNoExisteAsync(
             usuarios,
             hasher,
+            fieldEncryptionService,
             "Aprobador AccessTrust",
             "aprobador@accesstrust.local",
             "Aprobador123*",
-            new List<string> { "Aprobador" }
+            new List<string> { "Aprobador" },
+            "70000002"
         );
 
         await CrearUsuarioSiNoExisteAsync(
             usuarios,
             hasher,
+            fieldEncryptionService,
             "Solicitante AccessTrust",
             "solicitante@accesstrust.local",
             "Solicitante123*",
-            new List<string> { "Solicitante" }
+            new List<string> { "Solicitante" },
+            "70000003"
         );
     }
 
     private static async Task CrearUsuarioSiNoExisteAsync(
         IMongoCollection<Usuario> usuarios,
         PasswordHasher<Usuario> hasher,
+        IFieldEncryptionService fieldEncryptionService,
         string nombre,
         string correo,
         string passwordPlano,
-        List<string> roles)
+        List<string> roles,
+        string documentoIdentidadPlano)
     {
-        var existe = await usuarios.Find(u => u.Correo == correo).AnyAsync();
-        if (existe)
+        var usuarioExistente = await usuarios
+            .Find(u => u.Correo == correo)
+            .FirstOrDefaultAsync();
+
+        var documentoCifrado = fieldEncryptionService.EncryptToBase64(documentoIdentidadPlano);
+
+        if (usuarioExistente is not null)
         {
+            if (string.IsNullOrWhiteSpace(usuarioExistente.DocumentoIdentidadCifrado))
+            {
+                var update = Builders<Usuario>.Update
+                    .Set(u => u.DocumentoIdentidadCifrado, documentoCifrado);
+
+                await usuarios.UpdateOneAsync(
+                    u => u.Id == usuarioExistente.Id,
+                    update
+                );
+            }
+
             return;
         }
 
@@ -154,6 +182,8 @@ public static class DataSeeder
             Roles = roles,
             Estado = EstadoCuenta.Activo,
             FailedLoginCount = 0,
+            LockedUntil = null,
+            DocumentoIdentidadCifrado = documentoCifrado,
             CreatedAt = DateTime.UtcNow
         };
 

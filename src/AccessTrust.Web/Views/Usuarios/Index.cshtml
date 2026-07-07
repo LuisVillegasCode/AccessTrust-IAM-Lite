@@ -1,0 +1,79 @@
+@model List<AccessTrust.Web.ViewModels.Users.UsuarioAdminListItemViewModel>
+
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<div class="container mt-4">
+    <div class="mb-3">
+        <h2 class="mb-1">Usuarios del IAM</h2>
+        <p class="text-muted mb-0">
+            Vista administrativa para validar el cifrado de documentos de identidad.
+        </p>
+    </div>
+
+    <div class="alert alert-info">
+        El documento de identidad se almacena cifrado en MongoDB y se descifra únicamente desde la aplicación.
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-warning">
+            No existen usuarios registrados.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>Usuarios registrados</strong>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Roles</th>
+                            <th>Estado</th>
+                            <th>Documento descifrado</th>
+                            <th>Fecha creación UTC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var usuario in Model)
+                        {
+                            <tr>
+                                <td>@usuario.Nombre</td>
+                                <td><code>@usuario.Correo</code></td>
+                                <td>
+                                    @foreach (var rol in usuario.Roles)
+                                    {
+                                        <span class="badge bg-secondary me-1">@rol</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">@usuario.Estado</span>
+                                </td>
+                                <td>
+                                    @if (usuario.TieneDocumentoCifrado)
+                                    {
+                                        <code>@usuario.DocumentoIdentidadDescifrado</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No registrado</span>
+                                    }
+                                </td>
+                                <td>
+                                    @usuario.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

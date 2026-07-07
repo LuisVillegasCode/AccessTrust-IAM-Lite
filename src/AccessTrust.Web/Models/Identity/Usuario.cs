@@ -24,5 +24,8 @@ public class Usuario
 
     public DateTime? LockedUntil { get; set; }
 
+    [BsonIgnoreIfNull]
+    public string? DocumentoIdentidadCifrado { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

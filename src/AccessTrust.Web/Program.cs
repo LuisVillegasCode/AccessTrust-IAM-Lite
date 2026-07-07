@@ -1,3 +1,6 @@
+using AccessTrust.Web.Services.Reports;
+using AccessTrust.Web.Services.Users;
+using AccessTrust.Web.Services.Security;
 using AccessTrust.Web.Services.ExternalAccess;
 using AccessTrust.Web.Services.Credentials;
 using AccessTrust.Web.Services.Requests;
@@ -69,7 +72,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Services.AddSingleton<IFieldEncryptionService, AesGcmFieldEncryptionService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IUsuarioAdminService, UsuarioAdminService>();
+builder.Services.AddScoped<IReporteService, ReporteService>();
 
 builder.Services.AddScoped<IPoliticaAccesoService, PoliticaAccesoService>();
 builder.Services.AddScoped<IRecursoService, RecursoService>();

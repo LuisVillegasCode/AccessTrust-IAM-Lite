@@ -51,6 +51,13 @@
                                     Auditoría
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                asp-controller="Usuarios"
+                                asp-action="Index">
+                                    Usuarios
+                                </a>
+                            </li>
                         }
                         @if (User.IsInRole("Solicitante"))
                         {
