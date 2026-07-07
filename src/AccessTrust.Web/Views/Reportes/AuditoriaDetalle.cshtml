@@ -1,0 +1,166 @@
+@model AccessTrust.Web.ViewModels.Reports.ReporteDetallePaginadoViewModel<AccessTrust.Web.ViewModels.Reports.EventoAuditoriaDetalleReporteViewModel>
+
+@{
+    ViewData["Title"] = "Detalle de auditoría";
+
+    Dictionary<string, string> CrearRuta(int pagina)
+    {
+        var ruta = new Dictionary<string, string>
+        {
+            ["pagina"] = pagina.ToString(),
+            ["tamanoPagina"] = Model.TamanoPagina.ToString()
+        };
+
+        if (Model.Filtro.FechaDesde.HasValue) 
+            ruta["FechaDesde"] = Model.Filtro.FechaDesde.Value.ToString("yyyy-MM-dd");
+            
+        if (Model.Filtro.FechaHasta.HasValue) 
+            ruta["FechaHasta"] = Model.Filtro.FechaHasta.Value.ToString("yyyy-MM-dd");
+
+        if (!string.IsNullOrEmpty(Model.Filtro.UsuarioId)) 
+            ruta["UsuarioId"] = Model.Filtro.UsuarioId;
+
+        if (!string.IsNullOrEmpty(Model.Filtro.UsuarioTexto)) 
+            ruta["UsuarioTexto"] = Model.Filtro.UsuarioTexto;
+
+        if (!string.IsNullOrEmpty(Model.Filtro.RecursoId)) 
+            ruta["RecursoId"] = Model.Filtro.RecursoId;
+
+        if (!string.IsNullOrEmpty(Model.Filtro.ResultadoAuditoria)) 
+            ruta["ResultadoAuditoria"] = Model.Filtro.ResultadoAuditoria;
+
+        if (!string.IsNullOrEmpty(Model.Filtro.AccionAuditoria)) 
+            ruta["AccionAuditoria"] = Model.Filtro.AccionAuditoria;
+
+        if (!string.IsNullOrEmpty(Model.Filtro.SeccionesAbiertas)) 
+            ruta["SeccionesAbiertas"] = Model.Filtro.SeccionesAbiertas;
+
+        return ruta;
+    }
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">@Model.Titulo</h1>
+        <p class="text-muted mb-0">@Model.Descripcion</p>
+    </div>
+
+    <a asp-controller="Reportes"
+       asp-action="Index"
+       asp-route-FechaDesde="@(Model.Filtro.FechaDesde?.ToString("yyyy-MM-dd"))"
+       asp-route-FechaHasta="@(Model.Filtro.FechaHasta?.ToString("yyyy-MM-dd"))"
+       asp-route-UsuarioId="@Model.Filtro.UsuarioId"
+       asp-route-UsuarioTexto="@Model.Filtro.UsuarioTexto"
+       asp-route-RecursoId="@Model.Filtro.RecursoId"
+       asp-route-ResultadoAuditoria="@Model.Filtro.ResultadoAuditoria"
+       asp-route-AccionAuditoria="@Model.Filtro.AccionAuditoria"
+       asp-route-SeccionesAbiertas="@Model.Filtro.SeccionesAbiertas"
+       class="btn btn-outline-secondary">
+        Volver a reportes
+    </a>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-4 mb-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Total de eventos</div>
+                <h4 class="mb-0">@Model.TotalRegistros</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Resultado</div>
+                <h4 class="mb-0">@(string.IsNullOrWhiteSpace(Model.Filtro.ResultadoAuditoria) ? "Todos" : Model.Filtro.ResultadoAuditoria)</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Acción</div>
+                <h4 class="mb-0">@(string.IsNullOrWhiteSpace(Model.Filtro.AccionAuditoria) ? "Todas" : Model.Filtro.AccionAuditoria)</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        Eventos de auditoría
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Seq</th>
+                    <th>Fecha</th>
+                    <th>Actor</th>
+                    <th>Acción</th>
+                    <th>Resultado</th>
+                    <th>Detalle</th>
+                    <th>Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Registros.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            No hay eventos para los filtros seleccionados.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Registros)
+                    {
+                        <tr>
+                            <td>@item.Seq</td>
+                            <td>@(item.FechaCreacion?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                            <td>
+                                <div>@item.ActorNombre</div>
+                                <small class="text-muted">@item.ActorCorreo</small>
+                            </td>
+                            <td><small>@item.Accion</small></td>
+                            <td>@item.Resultado</td>
+                            <td><small>@item.DetalleResumen</small></td>
+                            <td>
+                                <small title="@item.Hash">
+                                    @(string.IsNullOrWhiteSpace(item.Hash) ? "-" : item.Hash[..Math.Min(12, item.Hash.Length)])
+                                </small>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">
+        Mostrando página @Model.PaginaActual de @Model.TotalPaginas
+    </div>
+
+    <div class="btn-group">
+        <a class="btn btn-outline-secondary @(Model.TienePaginaAnterior ? "" : "disabled")"
+           asp-controller="Reportes"
+           asp-action="AuditoriaDetalle"
+           asp-all-route-data="CrearRuta(Model.PaginaActual - 1)">
+            Anterior
+        </a>
+
+        <a class="btn btn-outline-secondary @(Model.TienePaginaSiguiente ? "" : "disabled")"
+           asp-controller="Reportes"
+           asp-action="AuditoriaDetalle"
+           asp-all-route-data="CrearRuta(Model.PaginaActual + 1)">
+            Siguiente
+        </a>
+    </div>
+</div>

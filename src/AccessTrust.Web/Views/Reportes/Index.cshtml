@@ -228,9 +228,15 @@
                              </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-5 d-flex gap-2">
                             <button type="submit" class="btn btn-outline-primary">
-                                 Aplicar a solicitudes
+                                Aplicar a solicitudes
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-outline-secondary"
+                                    formaction='@Url.Action("SolicitudesDetalle", "Reportes")'>
+                                Ver registros
                             </button>
                         </div>
                     </div>
@@ -352,9 +358,15 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
-                             <button type="submit" class="btn btn-outline-primary">
+                        <div class="col-md-5 d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary">
                                 Aplicar a credenciales
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-outline-secondary"
+                                    formaction='@Url.Action("CredencialesDetalle", "Reportes")'>
+                                Ver registros
                             </button>
                         </div>
                      </div>
@@ -476,9 +488,15 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
-                             <button type="submit" class="btn btn-outline-primary">
+                        <div class="col-md-5 d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary">
                                 Aplicar a tickets
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-outline-secondary"
+                                    formaction='@Url.Action("TicketsDetalle", "Reportes")'>
+                                Ver registros
                             </button>
                         </div>
                     </div>
@@ -563,9 +581,15 @@
                                    value="@Model.Filtro.AccionAuditoria" />
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4 d-flex gap-2">
                             <button type="submit" class="btn btn-outline-primary">
-                                 Aplicar a auditoría
+                                Aplicar a auditoría
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-outline-secondary"
+                                    formaction='@Url.Action("AuditoriaDetalle", "Reportes")'>
+                                Ver registros
                             </button>
                         </div>
                     </div>
@@ -685,9 +709,15 @@
                              </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-5 d-flex gap-2">
                             <button type="submit" class="btn btn-outline-primary">
-                                 Aplicar a recursos
+                                Aplicar a recursos
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-outline-secondary"
+                                    formaction='@Url.Action("RecursosDetalle", "Reportes")'>
+                                Ver registros
                             </button>
                         </div>
                      </div>

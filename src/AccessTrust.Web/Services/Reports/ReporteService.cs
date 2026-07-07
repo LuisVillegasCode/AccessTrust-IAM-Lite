@@ -130,6 +130,267 @@ public class ReporteService : IReporteService
         return dashboard;
     }
 
+    public async Task<ReporteDetallePaginadoViewModel<SolicitudDetalleReporteViewModel>> ListarSolicitudesDetalleAsync(
+    ReportesFiltroViewModel filtro,
+    int pagina,
+    int tamanoPagina)
+    {
+        filtro ??= new ReportesFiltroViewModel();
+
+        var (paginaNormalizada, tamanoNormalizado, skip) =
+            NormalizarPaginacion(pagina, tamanoPagina);
+
+        var match = ConstruirMatchOperativo(
+            filtro,
+            fechaCampo: "CreatedAt",
+            incluirUsuario: true,
+            incluirRecurso: true,
+            estadoFiltro: filtro.EstadoSolicitud
+        );
+
+        var total = await _solicitudes.CountDocumentsAsync(match);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", match),
+            CrearLookup(MongoCollections.Usuarios, "UsuarioId", "_id", "usuario"),
+            CrearUnwind("usuario"),
+            CrearLookup(MongoCollections.Recursos, "RecursoId", "_id", "recurso"),
+            CrearUnwind("recurso"),
+            CrearLookup(MongoCollections.Usuarios, "AprobadorId", "_id", "aprobador"),
+            CrearUnwind("aprobador"),
+            new BsonDocument("$sort", new BsonDocument("CreatedAt", -1)),
+            new BsonDocument("$skip", skip),
+            new BsonDocument("$limit", tamanoNormalizado)
+        };
+
+        var registros = await _solicitudes
+            .Aggregate<BsonDocument>(pipeline)
+            .ToListAsync();
+
+        await CargarOpcionesFiltroAsync(filtro);
+
+        return new ReporteDetallePaginadoViewModel<SolicitudDetalleReporteViewModel>
+        {
+            Titulo = "Detalle de solicitudes de acceso",
+            Descripcion = "Listado de solicitudes resultantes de los filtros aplicados.",
+            SeccionOrigen = "Solicitudes",
+            Filtro = filtro,
+            Registros = registros.Select(MapearSolicitudDetalle).ToList(),
+            PaginaActual = paginaNormalizada,
+            TamanoPagina = tamanoNormalizado,
+            TotalRegistros = total
+        };
+    }
+
+    public async Task<ReporteDetallePaginadoViewModel<CredencialDetalleReporteViewModel>> ListarCredencialesDetalleAsync(
+        ReportesFiltroViewModel filtro,
+        int pagina,
+        int tamanoPagina)
+    {
+        filtro ??= new ReportesFiltroViewModel();
+
+        var (paginaNormalizada, tamanoNormalizado, skip) =
+            NormalizarPaginacion(pagina, tamanoPagina);
+
+        var match = ConstruirMatchOperativo(
+            filtro,
+            fechaCampo: "IssuedAt",
+            incluirUsuario: true,
+            incluirRecurso: true,
+            estadoFiltro: filtro.EstadoCredencial
+        );
+
+        var total = await _credenciales.CountDocumentsAsync(match);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", match),
+            CrearLookup(MongoCollections.Usuarios, "UsuarioId", "_id", "usuario"),
+            CrearUnwind("usuario"),
+            CrearLookup(MongoCollections.Recursos, "RecursoId", "_id", "recurso"),
+            CrearUnwind("recurso"),
+            CrearLookup(MongoCollections.Usuarios, "EmitidaPorId", "_id", "emisor"),
+            CrearUnwind("emisor"),
+            new BsonDocument("$sort", new BsonDocument("IssuedAt", -1)),
+            new BsonDocument("$skip", skip),
+            new BsonDocument("$limit", tamanoNormalizado)
+        };
+
+        var registros = await _credenciales
+            .Aggregate<BsonDocument>(pipeline)
+            .ToListAsync();
+
+        await CargarOpcionesFiltroAsync(filtro);
+
+        return new ReporteDetallePaginadoViewModel<CredencialDetalleReporteViewModel>
+        {
+            Titulo = "Detalle de credenciales temporales",
+            Descripcion = "Listado de credenciales temporales emitidas por el IAM.",
+            SeccionOrigen = "Credenciales",
+            Filtro = filtro,
+            Registros = registros.Select(MapearCredencialDetalle).ToList(),
+            PaginaActual = paginaNormalizada,
+            TamanoPagina = tamanoNormalizado,
+            TotalRegistros = total
+        };
+    }
+
+    public async Task<ReporteDetallePaginadoViewModel<TicketDetalleReporteViewModel>> ListarTicketsDetalleAsync(
+        ReportesFiltroViewModel filtro,
+        int pagina,
+        int tamanoPagina)
+    {
+        filtro ??= new ReportesFiltroViewModel();
+
+        var (paginaNormalizada, tamanoNormalizado, skip) =
+            NormalizarPaginacion(pagina, tamanoPagina);
+
+        var match = ConstruirMatchOperativo(
+            filtro,
+            fechaCampo: "IssuedAt",
+            incluirUsuario: true,
+            incluirRecurso: true,
+            estadoFiltro: filtro.EstadoTicket
+        );
+
+        var total = await _tickets.CountDocumentsAsync(match);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", match),
+            CrearLookup(MongoCollections.Usuarios, "UsuarioId", "_id", "usuario"),
+            CrearUnwind("usuario"),
+            CrearLookup(MongoCollections.Recursos, "RecursoId", "_id", "recurso"),
+            CrearUnwind("recurso"),
+            new BsonDocument("$sort", new BsonDocument("IssuedAt", -1)),
+            new BsonDocument("$skip", skip),
+            new BsonDocument("$limit", tamanoNormalizado)
+        };
+
+        var registros = await _tickets
+            .Aggregate<BsonDocument>(pipeline)
+            .ToListAsync();
+
+        await CargarOpcionesFiltroAsync(filtro);
+
+        return new ReporteDetallePaginadoViewModel<TicketDetalleReporteViewModel>
+        {
+            Titulo = "Detalle de tickets externos",
+            Descripcion = "Listado de tickets emitidos para acceder a recursos externos protegidos.",
+            SeccionOrigen = "Tickets",
+            Filtro = filtro,
+            Registros = registros.Select(MapearTicketDetalle).ToList(),
+            PaginaActual = paginaNormalizada,
+            TamanoPagina = tamanoNormalizado,
+            TotalRegistros = total
+        };
+    }
+
+    public async Task<ReporteDetallePaginadoViewModel<EventoAuditoriaDetalleReporteViewModel>> ListarAuditoriaDetalleAsync(
+        ReportesFiltroViewModel filtro,
+        int pagina,
+        int tamanoPagina)
+    {
+        filtro ??= new ReportesFiltroViewModel();
+
+        var (paginaNormalizada, tamanoNormalizado, skip) =
+            NormalizarPaginacion(pagina, tamanoPagina);
+
+        var match = ConstruirMatchAuditoria(
+            filtro,
+            incluirAccion: true
+        );
+
+        var total = await _eventosAuditoria.CountDocumentsAsync(match);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", match),
+            CrearLookup(MongoCollections.Usuarios, "ActorUserId", "_id", "actor"),
+            CrearUnwind("actor"),
+            new BsonDocument("$sort", new BsonDocument("Seq", -1)),
+            new BsonDocument("$skip", skip),
+            new BsonDocument("$limit", tamanoNormalizado)
+        };
+
+        var registros = await _eventosAuditoria
+            .Aggregate<BsonDocument>(pipeline)
+            .ToListAsync();
+
+        await CargarOpcionesFiltroAsync(filtro);
+
+        return new ReporteDetallePaginadoViewModel<EventoAuditoriaDetalleReporteViewModel>
+        {
+            Titulo = "Detalle de eventos de auditoría",
+            Descripcion = "Listado de eventos registrados en la cadena de auditoría del IAM.",
+            SeccionOrigen = "Auditoria",
+            Filtro = filtro,
+            Registros = registros.Select(MapearEventoAuditoriaDetalle).ToList(),
+            PaginaActual = paginaNormalizada,
+            TamanoPagina = tamanoNormalizado,
+            TotalRegistros = total
+        };
+    }
+
+    public async Task<ReporteDetallePaginadoViewModel<RecursoDetalleReporteViewModel>> ListarRecursosDetalleAsync(
+        ReportesFiltroViewModel filtro,
+        int pagina,
+        int tamanoPagina)
+    {
+        filtro ??= new ReportesFiltroViewModel();
+
+        var (paginaNormalizada, tamanoNormalizado, skip) =
+            NormalizarPaginacion(pagina, tamanoPagina);
+
+        var match = new BsonDocument();
+
+        if (!string.IsNullOrWhiteSpace(filtro.RecursoId) &&
+            ObjectId.TryParse(filtro.RecursoId, out var recursoId))
+        {
+            match["_id"] = recursoId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(filtro.SensibilidadRecurso))
+        {
+            match["Sensibilidad"] = filtro.SensibilidadRecurso.Trim();
+        }
+
+        if (filtro.FechaDesde.HasValue || filtro.FechaHasta.HasValue)
+        {
+            match["CreatedAt"] = ConstruirFiltroFecha(filtro);
+        }
+
+        var total = await _recursos.CountDocumentsAsync(match);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", match),
+            CrearLookup(MongoCollections.Usuarios, "ResponsableId", "_id", "responsable"),
+            CrearUnwind("responsable"),
+            new BsonDocument("$sort", new BsonDocument("Nombre", 1)),
+            new BsonDocument("$skip", skip),
+            new BsonDocument("$limit", tamanoNormalizado)
+        };
+
+        var registros = await _recursos
+            .Aggregate<BsonDocument>(pipeline)
+            .ToListAsync();
+
+        await CargarOpcionesFiltroAsync(filtro);
+
+        return new ReporteDetallePaginadoViewModel<RecursoDetalleReporteViewModel>
+        {
+            Titulo = "Detalle de recursos protegidos",
+            Descripcion = "Inventario de recursos registrados y protegidos por el IAM.",
+            SeccionOrigen = "Recursos",
+            Filtro = filtro,
+            Registros = registros.Select(MapearRecursoDetalle).ToList(),
+            PaginaActual = paginaNormalizada,
+            TamanoPagina = tamanoNormalizado,
+            TotalRegistros = total
+        };
+    }
     private async Task<List<ReporteConteoPorEstadoViewModel>> ObtenerSolicitudesPorEstadoAsync(
         ReportesFiltroViewModel filtro)
     {
@@ -478,6 +739,270 @@ public class ReporteService : IReporteService
         filtro.EstadosDisponibles.AddRange(filtro.EstadosTicketDisponibles);
         filtro.EstadosDisponibles.AddRange(filtro.ResultadosAuditoriaDisponibles);
 
+    }
+
+    private static (int pagina, int tamanoPagina, int skip) NormalizarPaginacion(
+        int pagina,
+        int tamanoPagina)
+    {
+        var paginaNormalizada = Math.Max(1, pagina);
+        var tamanoNormalizado = Math.Clamp(tamanoPagina, 10, 50);
+        var skip = (paginaNormalizada - 1) * tamanoNormalizado;
+
+        return (paginaNormalizada, tamanoNormalizado, skip);
+    }
+
+    private static BsonDocument CrearLookup(
+        string from,
+        string localField,
+        string foreignField,
+        string alias)
+    {
+        return new BsonDocument("$lookup", new BsonDocument
+        {
+            { "from", from },
+            { "localField", localField },
+            { "foreignField", foreignField },
+            { "as", alias }
+        });
+    }
+
+    private static BsonDocument CrearUnwind(string path)
+    {
+        return new BsonDocument("$unwind", new BsonDocument
+        {
+            { "path", $"${path}" },
+            { "preserveNullAndEmptyArrays", true }
+        });
+    }
+
+    private static BsonDocument GetSubdocument(
+        BsonDocument document,
+        string fieldName)
+    {
+        if (!document.TryGetValue(fieldName, out var value) ||
+            value.IsBsonNull ||
+            !value.IsBsonDocument)
+        {
+            return new BsonDocument();
+        }
+
+        return value.AsBsonDocument;
+    }
+
+    private static DateTime? GetBsonDate(
+        BsonDocument document,
+        string fieldName)
+    {
+        if (!document.TryGetValue(fieldName, out var value) || value.IsBsonNull)
+        {
+            return null;
+        }
+
+        if (value.IsValidDateTime)
+        {
+            return value.ToUniversalTime();
+        }
+
+        if (value.IsString &&
+            DateTime.TryParse(value.AsString, out var fecha))
+        {
+            return fecha;
+        }
+
+        return null;
+    }
+
+    private static int GetBsonInt(
+        BsonDocument document,
+        string fieldName,
+        int defaultValue = 0)
+    {
+        if (!document.TryGetValue(fieldName, out var value) || value.IsBsonNull)
+        {
+            return defaultValue;
+        }
+
+        if (value.IsInt32)
+        {
+            return value.AsInt32;
+        }
+
+        if (value.IsInt64)
+        {
+            return Convert.ToInt32(value.AsInt64);
+        }
+
+        if (value.IsDouble)
+        {
+            return Convert.ToInt32(value.AsDouble);
+        }
+
+        return defaultValue;
+    }
+
+    private static long GetBsonLong(
+        BsonDocument document,
+        string fieldName,
+        long defaultValue = 0)
+    {
+        if (!document.TryGetValue(fieldName, out var value) || value.IsBsonNull)
+        {
+            return defaultValue;
+        }
+
+        if (value.IsInt64)
+        {
+            return value.AsInt64;
+        }
+
+        if (value.IsInt32)
+        {
+            return value.AsInt32;
+        }
+
+        return defaultValue;
+    }
+
+    private static bool GetBsonBool(
+        BsonDocument document,
+        string fieldName,
+        bool defaultValue = false)
+    {
+        if (!document.TryGetValue(fieldName, out var value) || value.IsBsonNull)
+        {
+            return defaultValue;
+        }
+
+        return value.IsBoolean
+            ? value.AsBoolean
+            : defaultValue;
+    }
+
+    private static string ResumirDetalle(BsonDocument document)
+    {
+        if (!document.TryGetValue("Detalle", out var detalle) || detalle.IsBsonNull)
+        {
+            return string.Empty;
+        }
+
+        var texto = detalle.ToString() ?? string.Empty;
+
+        return texto.Length <= 120
+            ? texto
+            : $"{texto[..120]}...";
+    }
+
+    private static SolicitudDetalleReporteViewModel MapearSolicitudDetalle(
+    BsonDocument document)
+    {
+        var usuario = GetSubdocument(document, "usuario");
+        var recurso = GetSubdocument(document, "recurso");
+        var aprobador = GetSubdocument(document, "aprobador");
+
+        return new SolicitudDetalleReporteViewModel
+        {
+            Id = GetBsonValueAsString(document.GetValue("_id", string.Empty)),
+            FechaCreacion = GetBsonDate(document, "CreatedAt"),
+            UsuarioNombre = GetBsonString(usuario, "Nombre"),
+            UsuarioCorreo = GetBsonString(usuario, "Correo"),
+            RecursoNombre = GetBsonString(recurso, "Nombre"),
+            RecursoTipo = GetBsonString(recurso, "Tipo"),
+            Sensibilidad = GetBsonString(recurso, "Sensibilidad"),
+            Estado = GetBsonString(document, "Estado"),
+            Motivo = GetBsonString(document, "Motivo"),
+            AprobadorNombre = GetBsonString(aprobador, "Nombre"),
+            FechaDecision = GetBsonDate(document, "DecisionAt")
+        };
+    }
+
+    private static CredencialDetalleReporteViewModel MapearCredencialDetalle(
+        BsonDocument document)
+    {
+        var usuario = GetSubdocument(document, "usuario");
+        var recurso = GetSubdocument(document, "recurso");
+        var emisor = GetSubdocument(document, "emisor");
+
+        return new CredencialDetalleReporteViewModel
+        {
+            Id = GetBsonValueAsString(document.GetValue("_id", string.Empty)),
+            FechaEmision = GetBsonDate(document, "IssuedAt"),
+            FechaExpiracion = GetBsonDate(document, "ExpiresAt"),
+            UsuarioNombre = GetBsonString(usuario, "Nombre"),
+            UsuarioCorreo = GetBsonString(usuario, "Correo"),
+            RecursoNombre = GetBsonString(recurso, "Nombre"),
+            RecursoTipo = GetBsonString(recurso, "Tipo"),
+            Sensibilidad = GetBsonString(recurso, "Sensibilidad"),
+            Estado = GetBsonString(document, "Estado"),
+            UsosRealizados = GetBsonInt(document, "UsosRealizados"),
+            UsosMaximos = GetBsonInt(document, "UsosMaximos"),
+            EmitidaPorNombre = GetBsonString(emisor, "Nombre")
+        };
+    }
+
+    private static TicketDetalleReporteViewModel MapearTicketDetalle(
+        BsonDocument document)
+    {
+        var usuario = GetSubdocument(document, "usuario");
+        var recurso = GetSubdocument(document, "recurso");
+
+        var credencialId = document.Contains("CredencialId")
+            ? document.GetValue("CredencialId", string.Empty)
+            : document.GetValue("CredencialTemporalId", string.Empty);
+
+        return new TicketDetalleReporteViewModel
+        {
+            Id = GetBsonValueAsString(document.GetValue("_id", string.Empty)),
+            FechaEmision = GetBsonDate(document, "IssuedAt"),
+            FechaExpiracion = GetBsonDate(document, "ExpiresAt"),
+            FechaConsumo = GetBsonDate(document, "ConsumedAt"),
+            UsuarioNombre = GetBsonString(usuario, "Nombre"),
+            UsuarioCorreo = GetBsonString(usuario, "Correo"),
+            RecursoNombre = GetBsonString(recurso, "Nombre"),
+            RecursoTipo = GetBsonString(recurso, "Tipo"),
+            Sensibilidad = GetBsonString(recurso, "Sensibilidad"),
+            Estado = GetBsonString(document, "Estado"),
+            CredencialId = GetBsonValueAsString(credencialId)
+        };
+    }
+
+    private static EventoAuditoriaDetalleReporteViewModel MapearEventoAuditoriaDetalle(
+        BsonDocument document)
+    {
+        var actor = GetSubdocument(document, "actor");
+
+        return new EventoAuditoriaDetalleReporteViewModel
+        {
+            Id = GetBsonValueAsString(document.GetValue("_id", string.Empty)),
+            Seq = GetBsonLong(document, "Seq"),
+            FechaCreacion = GetBsonDate(document, "CreatedAt"),
+            ActorNombre = GetBsonString(actor, "Nombre"),
+            ActorCorreo = GetBsonString(actor, "Correo"),
+            Accion = GetBsonString(document, "Accion"),
+            Resultado = GetBsonString(document, "Resultado"),
+            DetalleResumen = ResumirDetalle(document),
+            PrevHash = GetBsonString(document, "PrevHash"),
+            Hash = GetBsonString(document, "Hash")
+        };
+    }
+
+    private static RecursoDetalleReporteViewModel MapearRecursoDetalle(
+        BsonDocument document)
+    {
+        var responsable = GetSubdocument(document, "responsable");
+
+        return new RecursoDetalleReporteViewModel
+        {
+            Id = GetBsonValueAsString(document.GetValue("_id", string.Empty)),
+            Nombre = GetBsonString(document, "Nombre"),
+            Tipo = GetBsonString(document, "Tipo"),
+            Sensibilidad = GetBsonString(document, "Sensibilidad"),
+            Url = GetBsonString(document, "Url"),
+            ResponsableNombre = GetBsonString(responsable, "Nombre"),
+            ResponsableCorreo = GetBsonString(responsable, "Correo"),
+            Activo = GetBsonBool(document, "Activo"),
+            FechaCreacion = GetBsonDate(document, "CreatedAt")
+        };
     }
 
     private static BsonDocument[] ConstruirPipelineConteoPorRecurso(
