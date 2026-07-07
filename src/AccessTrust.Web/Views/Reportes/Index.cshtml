@@ -1,545 +1,790 @@
 @model AccessTrust.Web.ViewModels.Reports.ReportesDashboardViewModel
 
 @{
-    ViewData["Title"] = "Reportes IAM";
+    ViewData["Title"] = "Reportes";
 }
 
-<div class="container mt-4">
-    <div class="mb-4">
-        <h2 class="mb-1">Reportes del IAM</h2>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">Reportes del IAM</h1>
         <p class="text-muted mb-0">
-            Métricas generadas mediante aggregation pipelines de MongoDB.
+            Consulta agregada de solicitudes, credenciales, tickets externos, auditoría y recursos.
         </p>
-        <small class="text-muted">
-            Generado en UTC: @Model.GeneradoAt.ToString("yyyy-MM-dd HH:mm:ss")
-        </small>
     </div>
 
+    <div class="text-muted small">
+        Generado UTC: @Model.GeneradoAt.ToString("yyyy-MM-dd HH:mm:ss")
+    </div>
+</div>
+
+<form method="get" asp-controller="Reportes" asp-action="Index" id="formReportes">
+
+    <!-- ==========================
+         Filtros globales
+    =========================== -->
     <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Filtros de reporte</strong>
+        <div class="card-header bg-light">
+            <strong>Filtros globales</strong>
         </div>
 
         <div class="card-body">
-            <form asp-controller="Reportes" asp-action="Index" method="get">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="FechaDesde" class="form-label">Fecha desde</label>
-                        <input id="FechaDesde"
-                               name="FechaDesde"
-                               type="datetime-local"
-                               class="form-control"
-                               value="@(Model.Filtro.FechaDesde?.ToString("yyyy-MM-ddTHH:mm"))" />
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Fecha desde</label>
+                    <input type="date"
+                           class="form-control"
+                           name="FechaDesde"
+                           value="@(Model.Filtro.FechaDesde?.ToString("yyyy-MM-dd"))" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Fecha hasta</label>
+                    <input type="date"
+                           class="form-control"
+                           name="FechaHasta"
+                           value="@(Model.Filtro.FechaHasta?.ToString("yyyy-MM-dd"))" />
+                </div>
+
+                <div class="col-md-3 position-relative">
+                    <label class="form-label">Usuario</label>
+
+                    <input type="hidden"
+                           id="UsuarioId"
+                           name="UsuarioId"
+                           value="@Model.Filtro.UsuarioId" />
+
+                    <input type="text"
+                           id="UsuarioBusqueda"
+                           name="UsuarioTexto"
+                           class="form-control"
+                           autocomplete="off"
+                           placeholder="Buscar por nombre o correo"
+                           value="@Model.Filtro.UsuarioTexto" />
+
+                    <div id="UsuariosResultados"
+                         class="list-group position-absolute w-100 shadow-sm"
+                         style="z-index: 1000;">
                     </div>
+                </div>
 
-                    <div class="col-md-3">
-                        <label for="FechaHasta" class="form-label">Fecha hasta</label>
-                        <input id="FechaHasta"
-                               name="FechaHasta"
-                               type="datetime-local"
-                               class="form-control"
-                               value="@(Model.Filtro.FechaHasta?.ToString("yyyy-MM-ddTHH:mm"))" />
-                    </div>
+                <div class="col-md-3">
+                    <label class="form-label">Recurso</label>
+                    <select class="form-select" name="RecursoId">
+                        <option value="">Todos</option>
+                        @foreach (var recurso in Model.Filtro.RecursosDisponibles)
+                        {
+                            <option value="@recurso.Id"
+                                    selected="@(Model.Filtro.RecursoId == recurso.Id)">
+                                @recurso.Texto
+                            </option>
+                        }
+                    </select>
+                </div>
 
-                    <div class="col-md-3">
-                        <label for="RecursoId" class="form-label">Recurso</label>
-                        <select id="RecursoId" name="RecursoId" class="form-select">
-                            <option value="">Todos</option>
-                            @foreach (var recurso in Model.Filtro.RecursosDisponibles)
-                            {
-                                <option value="@recurso.Id"
-                                        selected="@(Model.Filtro.RecursoId == recurso.Id ? "selected" : null)">
-                                    @recurso.Texto
-                                </option>
-                            }
-                        </select>
-                    </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        Aplicar filtros
+                    </button>
 
-                    <div class="col-md-3 position-relative">
-                        <label for="UsuarioBusqueda" class="form-label">Usuario</label>
+                    <a asp-controller="Reportes"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Limpiar filtros
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <input id="UsuarioBusqueda"
-                            name="UsuarioTexto"
-                            type="text"
-                            class="form-control"
-                            value="@Model.Filtro.UsuarioTexto"
-                            placeholder="Buscar por nombre o correo"
-                            autocomplete="off" />
+    <!-- ==========================
+         Tarjetas resumen
+    =========================== -->
+    <div class="row mb-4">
+        <div class="col-md-6 col-xl mb-3">
+            <div class="card shadow-sm h-100 border-start border-primary border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Solicitudes</h6>
+                    <h3 class="mb-2">@Model.TotalSolicitudes</h3>
+                    <a href="#seccionSolicitudes" class="small text-decoration-none">
+                        Ver detalle
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                        <input id="UsuarioId"
-                            name="UsuarioId"
-                            type="hidden"
-                            value="@Model.Filtro.UsuarioId" />
+        <div class="col-md-6 col-xl mb-3">
+            <div class="card shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Credenciales</h6>
+                    <h3 class="mb-2">@Model.TotalCredenciales</h3>
+                    <a href="#seccionCredenciales" class="small text-decoration-none">
+                        Ver detalle
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                        <div id="UsuarioResultados"
-                            class="list-group position-absolute w-100 shadow-sm d-none"
-                            style="z-index: 1050;">
+        <div class="col-md-6 col-xl mb-3">
+            <div class="card shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Tickets externos</h6>
+                    <h3 class="mb-2">@Model.TotalTicketsExternos</h3>
+                    <a href="#seccionTickets" class="small text-decoration-none">
+                        Ver detalle
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl mb-3">
+            <div class="card shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Auditoría</h6>
+                    <h3 class="mb-2">@Model.TotalEventosAuditoria</h3>
+                    <a href="#seccionAuditoria" class="small text-decoration-none">
+                        Ver detalle
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl mb-3">
+            <div class="card shadow-sm h-100 border-start border-secondary border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Recursos</h6>
+                    <h3 class="mb-2">@Model.TotalRecursos</h3>
+                    <a href="#seccionRecursos" class="small text-decoration-none">
+                        Ver detalle
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================
+         Secciones colapsables
+    =========================== -->
+    <div class="accordion mb-4" id="accordionReportes">
+
+        <!-- Solicitudes -->
+        <div class="accordion-item" id="seccionSolicitudes">
+            <h2 class="accordion-header" id="headingSolicitudes">
+                <button class="accordion-button"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapseSolicitudes"
+                        aria-expanded="true"
+                        aria-controls="collapseSolicitudes">
+                    Solicitudes de acceso
+                </button>
+            </h2>
+
+            <div id="collapseSolicitudes"
+                 class="accordion-collapse collapse show"
+                 aria-labelledby="headingSolicitudes"
+                 data-bs-parent="#accordionReportes">
+
+                <div class="accordion-body">
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Estado de solicitud</label>
+                            <select class="form-select" name="EstadoSolicitud">
+                                <option value="">Todos</option>
+                                @foreach (var estado in Model.Filtro.EstadosSolicitudDisponibles)
+                                {
+                                    <option value="@estado"
+                                            selected="@(Model.Filtro.EstadoSolicitud == estado)">
+                                        @estado
+                                    </option>
+                                }
+                            </select>
                         </div>
 
-                        <small class="text-muted">
-                            Escribe mínimo 2 caracteres y selecciona un usuario.
-                        </small>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                Aplicar a solicitudes
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="col-md-3">
-                        <label for="Estado" class="form-label">Estado / Resultado</label>
-                        <select id="Estado" name="Estado" class="form-select">
-                            <option value="">Todos</option>
-                            @foreach (var estado in Model.Filtro.EstadosDisponibles)
-                            {
-                                <option value="@estado"
-                                        selected="@(Model.Filtro.Estado == estado ? "selected" : null)">
-                                    @estado
-                                </option>
-                            }
-                        </select>
+                    <div class="row">
+                        <div class="col-lg-5 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    Solicitudes por estado
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Estado</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!Model.SolicitudesPorEstado.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="2" class="text-muted text-center">
+                                                        Sin datos para los filtros seleccionados.
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in Model.SolicitudesPorEstado)
+                                                {
+                                                    <tr>
+                                                        <td>@item.Estado</td>
+                                                        <td class="text-end">@item.Total</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-7 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    Solicitudes por recurso
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Recurso</th>
+                                                <th>Tipo</th>
+                                                <th>Sensibilidad</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!Model.SolicitudesPorRecurso.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="4" class="text-muted text-center">
+                                                        Sin datos para los filtros seleccionados.
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in Model.SolicitudesPorRecurso)
+                                                {
+                                                    <tr>
+                                                        <td>@item.RecursoNombre</td>
+                                                        <td>@item.RecursoTipo</td>
+                                                        <td>@item.Sensibilidad</td>
+                                                        <td class="text-end">@item.Total</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Credenciales -->
+        <div class="accordion-item" id="seccionCredenciales">
+            <h2 class="accordion-header" id="headingCredenciales">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapseCredenciales"
+                        aria-expanded="false"
+                        aria-controls="collapseCredenciales">
+                    Credenciales temporales
+                </button>
+            </h2>
+
+            <div id="collapseCredenciales"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="headingCredenciales"
+                 data-bs-parent="#accordionReportes">
+
+                <div class="accordion-body">
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Estado de credencial</label>
+                            <select class="form-select" name="EstadoCredencial">
+                                <option value="">Todos</option>
+                                @foreach (var estado in Model.Filtro.EstadosCredencialDisponibles)
+                                {
+                                    <option value="@estado"
+                                            selected="@(Model.Filtro.EstadoCredencial == estado)">
+                                        @estado
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                Aplicar a credenciales
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="col-md-9 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            Aplicar filtros
-                        </button>
+                    <div class="row">
+                        <div class="col-lg-5 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    Credenciales por estado
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Estado</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!Model.CredencialesPorEstado.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="2" class="text-muted text-center">
+                                                        Sin datos para los filtros seleccionados.
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in Model.CredencialesPorEstado)
+                                                {
+                                                    <tr>
+                                                        <td>@item.Estado</td>
+                                                        <td class="text-end">@item.Total</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-                        <a asp-controller="Reportes"
-                           asp-action="Index"
-                           class="btn btn-secondary">
-                            Limpiar filtros
-                        </a>
+                        <div class="col-lg-7 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    Credenciales por recurso
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Recurso</th>
+                                                <th>Tipo</th>
+                                                <th>Sensibilidad</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!Model.CredencialesPorRecurso.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="4" class="text-muted text-center">
+                                                        Sin datos para los filtros seleccionados.
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in Model.CredencialesPorRecurso)
+                                                {
+                                                    <tr>
+                                                        <td>@item.RecursoNombre</td>
+                                                        <td>@item.RecursoTipo</td>
+                                                        <td>@item.Sensibilidad</td>
+                                                        <td class="text-end">@item.Total</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-md-2 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted">Solicitudes</h6>
-                    <h3 class="mb-0">@Model.TotalSolicitudes</h3>
-                </div>
             </div>
         </div>
 
-        <div class="col-md-2 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted">Credenciales</h6>
-                    <h3 class="mb-0">@Model.TotalCredenciales</h3>
-                </div>
-            </div>
-        </div>
+        <!-- Tickets externos -->
+        <div class="accordion-item" id="seccionTickets">
+            <h2 class="accordion-header" id="headingTickets">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapseTickets"
+                        aria-expanded="false"
+                        aria-controls="collapseTickets">
+                    Tickets externos
+                </button>
+            </h2>
 
-        <div class="col-md-2 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted">Tickets externos</h6>
-                    <h3 class="mb-0">@Model.TotalTicketsExternos</h3>
-                </div>
-            </div>
-        </div>
+            <div id="collapseTickets"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="headingTickets"
+                 data-bs-parent="#accordionReportes">
 
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted">Eventos de auditoría</h6>
-                    <h3 class="mb-0">@Model.TotalEventosAuditoria</h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted">Recursos</h6>
-                    <h3 class="mb-0">@Model.TotalRecursos</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <strong>Solicitudes por estado</strong>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Estado</th>
-                                <th class="text-end">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.SolicitudesPorEstado.Count == 0)
-                            {
-                                <tr>
-                                    <td colspan="2" class="text-muted">Sin datos.</td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in Model.SolicitudesPorEstado)
+                <div class="accordion-body">
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Estado de ticket</label>
+                            <select class="form-select" name="EstadoTicket">
+                                <option value="">Todos</option>
+                                @foreach (var estado in Model.Filtro.EstadosTicketDisponibles)
                                 {
-                                    <tr>
-                                        <td>@item.Estado</td>
-                                        <td class="text-end">@item.Total</td>
-                                    </tr>
+                                    <option value="@estado"
+                                            selected="@(Model.Filtro.EstadoTicket == estado)">
+                                        @estado
+                                    </option>
                                 }
-                            }
-                        </tbody>
-                    </table>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                Aplicar a tickets
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            Tickets externos por estado
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!Model.TicketsExternosPorEstado.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="2" class="text-muted text-center">
+                                                Sin datos para los filtros seleccionados.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var item in Model.TicketsExternosPorEstado)
+                                        {
+                                            <tr>
+                                                <td>@item.Estado</td>
+                                                <td class="text-end">@item.Total</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <strong>Credenciales por estado</strong>
-                </div>
+        <!-- Auditoría -->
+        <div class="accordion-item" id="seccionAuditoria">
+            <h2 class="accordion-header" id="headingAuditoria">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapseAuditoria"
+                        aria-expanded="false"
+                        aria-controls="collapseAuditoria">
+                    Auditoría
+                </button>
+            </h2>
 
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Estado</th>
-                                <th class="text-end">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.CredencialesPorEstado.Count == 0)
-                            {
-                                <tr>
-                                    <td colspan="2" class="text-muted">Sin datos.</td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in Model.CredencialesPorEstado)
+            <div id="collapseAuditoria"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="headingAuditoria"
+                 data-bs-parent="#accordionReportes">
+
+                <div class="accordion-body">
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Resultado de auditoría</label>
+                            <select class="form-select" name="ResultadoAuditoria">
+                                <option value="">Todos</option>
+                                @foreach (var resultado in Model.Filtro.ResultadosAuditoriaDisponibles)
                                 {
-                                    <tr>
-                                        <td>@item.Estado</td>
-                                        <td class="text-end">@item.Total</td>
-                                    </tr>
+                                    <option value="@resultado"
+                                            selected="@(Model.Filtro.ResultadoAuditoria == resultado)">
+                                        @resultado
+                                    </option>
                                 }
-                            }
-                        </tbody>
-                    </table>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Acción de auditoría</label>
+                            <input type="text"
+                                   class="form-control"
+                                   name="AccionAuditoria"
+                                   placeholder="Ejemplo: TICKET, ACCESO, LOGIN"
+                                   value="@Model.Filtro.AccionAuditoria" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                Aplicar a auditoría
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-7 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    Eventos por acción y resultado
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Acción</th>
+                                                <th>Resultado</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!Model.EventosAuditoriaPorAccionResultado.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="3" class="text-muted text-center">
+                                                        Sin datos para los filtros seleccionados.
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in Model.EventosAuditoriaPorAccionResultado)
+                                                {
+                                                    <tr>
+                                                        <td>@item.Accion</td>
+                                                        <td>@item.Resultado</td>
+                                                        <td class="text-end">@item.Total</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    Accesos externos permitidos y denegados
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Resultado</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!Model.AccesosExternosPermitidosDenegados.Any())
+                                            {
+                                                <tr>
+                                                    <td colspan="2" class="text-muted text-center">
+                                                        Sin datos para los filtros seleccionados.
+                                                    </td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in Model.AccesosExternosPermitidosDenegados)
+                                                {
+                                                    <tr>
+                                                        <td>@item.Resultado</td>
+                                                        <td class="text-end">@item.Total</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <strong>Tickets externos por estado</strong>
-                </div>
+        <!-- Recursos -->
+        <div class="accordion-item" id="seccionRecursos">
+            <h2 class="accordion-header" id="headingRecursos">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapseRecursos"
+                        aria-expanded="false"
+                        aria-controls="collapseRecursos">
+                    Recursos
+                </button>
+            </h2>
 
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Estado</th>
-                                <th class="text-end">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.TicketsExternosPorEstado.Count == 0)
-                            {
-                                <tr>
-                                    <td colspan="2" class="text-muted">Sin datos.</td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in Model.TicketsExternosPorEstado)
+            <div id="collapseRecursos"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="headingRecursos"
+                 data-bs-parent="#accordionReportes">
+
+                <div class="accordion-body">
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Sensibilidad</label>
+                            <select class="form-select" name="SensibilidadRecurso">
+                                <option value="">Todas</option>
+                                @foreach (var sensibilidad in Model.Filtro.SensibilidadesRecursoDisponibles)
                                 {
-                                    <tr>
-                                        <td>@item.Estado</td>
-                                        <td class="text-end">@item.Total</td>
-                                    </tr>
+                                    <option value="@sensibilidad"
+                                            selected="@(Model.Filtro.SensibilidadRecurso == sensibilidad)">
+                                        @sensibilidad
+                                    </option>
                                 }
-                            }
-                        </tbody>
-                    </table>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-primary">
+                                Aplicar a recursos
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            Recursos por sensibilidad
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Sensibilidad</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!Model.RecursosPorSensibilidad.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="2" class="text-muted text-center">
+                                                Sin datos para los filtros seleccionados.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var item in Model.RecursosPorSensibilidad)
+                                        {
+                                            <tr>
+                                                <td>@item.Sensibilidad</td>
+                                                <td class="text-end">@item.Total</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-secondary mt-3 mb-0">
+                        Este reporte representa el inventario de recursos del IAM. Por eso no depende de estados de solicitudes,
+                        credenciales o tickets.
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <strong>Recursos por sensibilidad</strong>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Sensibilidad</th>
-                                <th class="text-end">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.RecursosPorSensibilidad.Count == 0)
-                            {
-                                <tr>
-                                    <td colspan="2" class="text-muted">Sin datos.</td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in Model.RecursosPorSensibilidad)
-                                {
-                                    <tr>
-                                        <td>@item.Sensibilidad</td>
-                                        <td class="text-end">@item.Total</td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     </div>
+</form>
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Solicitudes por recurso</strong>
-        </div>
+@section Scripts {
+    <script>
+        (() => {
+            const input = document.getElementById("UsuarioBusqueda");
+            const hidden = document.getElementById("UsuarioId");
+            const resultados = document.getElementById("UsuariosResultados");
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Recurso</th>
-                        <th>Tipo</th>
-                        <th>Sensibilidad</th>
-                        <th class="text-end">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.SolicitudesPorRecurso.Count == 0)
-                    {
-                        <tr>
-                            <td colspan="4" class="text-muted">Sin datos.</td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var item in Model.SolicitudesPorRecurso)
-                        {
-                            <tr>
-                                <td>@item.RecursoNombre</td>
-                                <td>@item.RecursoTipo</td>
-                                <td>@item.Sensibilidad</td>
-                                <td class="text-end">@item.Total</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Credenciales por recurso</strong>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Recurso</th>
-                        <th>Tipo</th>
-                        <th>Sensibilidad</th>
-                        <th class="text-end">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.CredencialesPorRecurso.Count == 0)
-                    {
-                        <tr>
-                            <td colspan="4" class="text-muted">Sin datos.</td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var item in Model.CredencialesPorRecurso)
-                        {
-                            <tr>
-                                <td>@item.RecursoNombre</td>
-                                <td>@item.RecursoTipo</td>
-                                <td>@item.Sensibilidad</td>
-                                <td class="text-end">@item.Total</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Eventos de auditoría por acción y resultado</strong>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Acción</th>
-                        <th>Resultado</th>
-                        <th class="text-end">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.EventosAuditoriaPorAccionResultado.Count == 0)
-                    {
-                        <tr>
-                            <td colspan="3" class="text-muted">Sin datos.</td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var item in Model.EventosAuditoriaPorAccionResultado)
-                        {
-                            <tr>
-                                <td><code>@item.Accion</code></td>
-                                <td>@item.Resultado</td>
-                                <td class="text-end">@item.Total</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Accesos externos permitidos y denegados</strong>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Resultado</th>
-                        <th class="text-end">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.AccesosExternosPermitidosDenegados.Count == 0)
-                    {
-                        <tr>
-                            <td colspan="2" class="text-muted">Sin datos.</td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var item in Model.AccesosExternosPermitidosDenegados)
-                        {
-                            <tr>
-                                <td>@item.Resultado</td>
-                                <td class="text-end">@item.Total</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="alert alert-secondary">
-        Estos reportes se generan mediante aggregation pipelines de MongoDB y permiten analizar el flujo IAM:
-        solicitudes, credenciales temporales, tickets externos, recursos y eventos de auditoría.
-    </div>
-</div>
-<script>
-    (() => {
-        const input = document.getElementById("UsuarioBusqueda");
-        const hidden = document.getElementById("UsuarioId");
-        const results = document.getElementById("UsuarioResultados");
-
-        if (!input || !hidden || !results) {
-            return;
-        }
-
-        let timer = null;
-
-        function limpiarResultados() {
-            results.innerHTML = "";
-            results.classList.add("d-none");
-        }
-
-        function crearResultado(usuario) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "list-group-item list-group-item-action";
-            button.textContent = usuario.texto;
-
-            button.addEventListener("click", () => {
-                input.value = usuario.texto;
-                hidden.value = usuario.id;
-                limpiarResultados();
-            });
-
-            return button;
-        }
-
-        input.addEventListener("input", () => {
-            const term = input.value.trim();
-
-            hidden.value = "";
-
-            if (timer) {
-                clearTimeout(timer);
-            }
-
-            if (term.length < 2) {
-                limpiarResultados();
+            if (!input || !hidden || !resultados) {
                 return;
             }
 
-            timer = setTimeout(async () => {
-                const response = await fetch(`/Reportes/BuscarUsuarios?term=${encodeURIComponent(term)}`);
+            let timer = null;
 
-                if (!response.ok) {
-                    limpiarResultados();
+            function limpiarResultados() {
+                resultados.innerHTML = "";
+            }
+
+            input.addEventListener("input", () => {
+                const term = input.value.trim();
+
+                hidden.value = "";
+                limpiarResultados();
+
+                if (timer) {
+                    clearTimeout(timer);
+                }
+
+                if (term.length < 2) {
                     return;
                 }
 
-                const usuarios = await response.json();
+                timer = setTimeout(async () => {
+                    const response = await fetch(`/Reportes/BuscarUsuarios?term=${encodeURIComponent(term)}`);
 
-                results.innerHTML = "";
+                    if (!response.ok) {
+                        return;
+                    }
 
-                if (usuarios.length === 0) {
-                    const empty = document.createElement("div");
-                    empty.className = "list-group-item text-muted";
-                    empty.textContent = "No se encontraron usuarios.";
-                    results.appendChild(empty);
-                } else {
+                    const usuarios = await response.json();
+
+                    limpiarResultados();
+
                     usuarios.forEach(usuario => {
-                        results.appendChild(crearResultado(usuario));
+                        const id = usuario.id ?? usuario.Id;
+                        const texto = usuario.texto ?? usuario.Texto;
+
+                        const item = document.createElement("button");
+                        item.type = "button";
+                        item.className = "list-group-item list-group-item-action";
+                        item.textContent = texto;
+
+                        item.addEventListener("click", () => {
+                            hidden.value = id;
+                            input.value = texto;
+                            limpiarResultados();
+                        });
+
+                        resultados.appendChild(item);
                     });
+                }, 250);
+            });
+
+            document.addEventListener("click", (event) => {
+                if (!resultados.contains(event.target) && event.target !== input) {
+                    limpiarResultados();
                 }
-
-                results.classList.remove("d-none");
-            }, 250);
-        });
-
-        document.addEventListener("click", (event) => {
-            if (!input.contains(event.target) && !results.contains(event.target)) {
-                limpiarResultados();
-            }
-        });
-    })();
-</script>
+            });
+        })();
+    </script>
+}

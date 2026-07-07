@@ -138,7 +138,7 @@ public class ReporteService : IReporteService
             fechaCampo: "CreatedAt",
             incluirUsuario: true,
             incluirRecurso: true,
-            incluirEstado: true
+            estadoFiltro: filtro.EstadoSolicitud
         );
 
         var pipeline = new[]
@@ -171,7 +171,7 @@ public class ReporteService : IReporteService
             fechaCampo: "CreatedAt",
             incluirUsuario: true,
             incluirRecurso: true,
-            incluirEstado: true
+            estadoFiltro: filtro.EstadoSolicitud
         );
 
         var pipeline = ConstruirPipelineConteoPorRecurso(match);
@@ -191,7 +191,7 @@ public class ReporteService : IReporteService
             fechaCampo: "IssuedAt",
             incluirUsuario: true,
             incluirRecurso: true,
-            incluirEstado: true
+            estadoFiltro: filtro.EstadoCredencial
         );
 
         var pipeline = new[]
@@ -224,7 +224,7 @@ public class ReporteService : IReporteService
             fechaCampo: "IssuedAt",
             incluirUsuario: true,
             incluirRecurso: true,
-            incluirEstado: true
+            estadoFiltro: filtro.EstadoCredencial
         );
 
         var pipeline = ConstruirPipelineConteoPorRecurso(match);
@@ -244,7 +244,7 @@ public class ReporteService : IReporteService
             fechaCampo: "IssuedAt",
             incluirUsuario: true,
             incluirRecurso: true,
-            incluirEstado: true
+            estadoFiltro: filtro.EstadoTicket
         );
 
         var pipeline = new[]
@@ -272,7 +272,10 @@ public class ReporteService : IReporteService
     private async Task<List<ReporteAuditoriaAccionResultadoViewModel>> ObtenerEventosAuditoriaPorAccionResultadoAsync(
         ReportesFiltroViewModel filtro)
     {
-        var match = ConstruirMatchAuditoria(filtro);
+        var match = ConstruirMatchAuditoria(
+            filtro,
+            incluirAccion: true
+        );
 
         var pipeline = new[]
         {
@@ -312,7 +315,10 @@ public class ReporteService : IReporteService
     private async Task<List<ReporteAccesoExternoViewModel>> ObtenerAccesosExternosPermitidosDenegadosAsync(
         ReportesFiltroViewModel filtro)
     {
-        var match = ConstruirMatchAuditoria(filtro);
+        var match = ConstruirMatchAuditoria(
+            filtro,
+            incluirAccion: false
+        );
 
         match["Accion"] = new BsonDocument("$in", new BsonArray
         {
@@ -356,6 +362,11 @@ public class ReporteService : IReporteService
             ObjectId.TryParse(filtro.RecursoId, out var recursoId))
         {
             match["_id"] = recursoId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(filtro.SensibilidadRecurso))
+        {
+            match["Sensibilidad"] = filtro.SensibilidadRecurso.Trim();
         }
 
         if (filtro.FechaDesde.HasValue || filtro.FechaHasta.HasValue)
@@ -421,24 +432,52 @@ public class ReporteService : IReporteService
             }
         }
 
-        filtro.EstadosDisponibles = new List<string>
+        filtro.EstadosSolicitudDisponibles = new List<string>
         {
             "Pendiente",
             "Aprobada",
-            "Rechazada",
+            "Rechazada"
+        };
+
+        filtro.EstadosCredencialDisponibles = new List<string>
+        {
             "Activa",
             "Expirada",
             "Revocada",
-            "Usada",
+            "Usada"
+        };
+
+        filtro.EstadosTicketDisponibles = new List<string>
+        {
             "Activo",
             "Usado",
             "Expirado",
-            "Revocado",
+            "Revocado"
+        };
+
+        filtro.ResultadosAuditoriaDisponibles = new List<string>
+        {
             "Exitoso",
             "Fallido",
             "Permitido",
             "Denegado"
         };
+
+        filtro.SensibilidadesRecursoDisponibles = new List<string>
+        {
+            "Baja",
+            "Media",
+            "Alta"
+        };
+
+        // Compatibilidad temporal con la vista actual.
+        // Se eliminará cuando actualicemos Index.cshtml.
+        filtro.EstadosDisponibles = new List<string>();
+        filtro.EstadosDisponibles.AddRange(filtro.EstadosSolicitudDisponibles);
+        filtro.EstadosDisponibles.AddRange(filtro.EstadosCredencialDisponibles);
+        filtro.EstadosDisponibles.AddRange(filtro.EstadosTicketDisponibles);
+        filtro.EstadosDisponibles.AddRange(filtro.ResultadosAuditoriaDisponibles);
+
     }
 
     private static BsonDocument[] ConstruirPipelineConteoPorRecurso(
@@ -521,7 +560,7 @@ public class ReporteService : IReporteService
         string fechaCampo,
         bool incluirUsuario,
         bool incluirRecurso,
-        bool incluirEstado)
+        string? estadoFiltro)
     {
         var match = new BsonDocument();
 
@@ -544,16 +583,17 @@ public class ReporteService : IReporteService
             match["RecursoId"] = recursoId;
         }
 
-        if (incluirEstado && !string.IsNullOrWhiteSpace(filtro.Estado))
+        if (!string.IsNullOrWhiteSpace(estadoFiltro))
         {
-            match["Estado"] = filtro.Estado.Trim();
+            match["Estado"] = estadoFiltro.Trim();
         }
 
         return match;
     }
 
     private static BsonDocument ConstruirMatchAuditoria(
-        ReportesFiltroViewModel filtro)
+        ReportesFiltroViewModel filtro,
+        bool incluirAccion)
     {
         var match = new BsonDocument();
 
@@ -573,10 +613,17 @@ public class ReporteService : IReporteService
             match["Detalle.recurso_id"] = filtro.RecursoId.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(filtro.Estado) &&
-            ResultadosAuditoria.Contains(filtro.Estado.Trim()))
+        if (!string.IsNullOrWhiteSpace(filtro.ResultadoAuditoria) &&
+            ResultadosAuditoria.Contains(filtro.ResultadoAuditoria.Trim()))
         {
-            match["Resultado"] = filtro.Estado.Trim();
+            match["Resultado"] = filtro.ResultadoAuditoria.Trim();
+        }
+
+        if (incluirAccion && !string.IsNullOrWhiteSpace(filtro.AccionAuditoria))
+        {
+            var patron = Regex.Escape(filtro.AccionAuditoria.Trim());
+
+            match["Accion"] = new BsonRegularExpression(patron, "i");
         }
 
         return match;
