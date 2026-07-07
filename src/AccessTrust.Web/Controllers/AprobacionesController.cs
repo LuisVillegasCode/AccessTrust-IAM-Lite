@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.Audit;
 using System.Security.Claims;
 using AccessTrust.Web.Models;
 using AccessTrust.Web.Services.Credentials;
@@ -15,6 +16,7 @@ public class AprobacionesController : Controller
 {
     private readonly ISolicitudAccesoService _solicitudAccesoService;
     private readonly IRecursoService _recursoService;
+    private readonly IAuditService _auditService;
     private readonly IPoliticaAccesoService _politicaAccesoService;
     private readonly ICredencialTemporalService _credencialTemporalService;
 
@@ -22,12 +24,14 @@ public class AprobacionesController : Controller
         ISolicitudAccesoService solicitudAccesoService,
         IRecursoService recursoService,
         IPoliticaAccesoService politicaAccesoService,
-        ICredencialTemporalService credencialTemporalService)
+        ICredencialTemporalService credencialTemporalService,
+        IAuditService auditService)
     {
         _solicitudAccesoService = solicitudAccesoService;
         _recursoService = recursoService;
         _politicaAccesoService = politicaAccesoService;
         _credencialTemporalService = credencialTemporalService;
+        _auditService = auditService;
     }
 
     public async Task<IActionResult> Index()
@@ -97,6 +101,31 @@ public class AprobacionesController : Controller
 
         if (!permiso.TienePermiso)
         {
+            var solicitudAuditada = await _solicitudAccesoService.GetByIdAsync(id);
+
+            var detalle = new Dictionary<string, string>
+            {
+                { "solicitud_id", id },
+                { "motivo_bloqueo", permiso.Message },
+                { "es_administrador", esAdministrador.ToString() }
+            };
+
+            if (solicitudAuditada is not null)
+            {
+                detalle["usuario_solicitante_id"] = solicitudAuditada.UsuarioId;
+                detalle["recurso_id"] = solicitudAuditada.RecursoId;
+                detalle["estado_solicitud"] = solicitudAuditada.Estado.ToString();
+            }
+
+            await _auditService.RegistrarEventoAsync(
+                accion: "SOLICITUD_REVISION_NO_AUTORIZADA",
+                entidadTipo: "SolicitudAcceso",
+                resultado: ResultadoAuditoria.Fallido,
+                actorUserId: revisorId,
+                entidadId: id,
+                detalle: detalle
+            );
+
             TempData["Error"] = permiso.Message;
             return RedirectToAction(nameof(Index));
         }
