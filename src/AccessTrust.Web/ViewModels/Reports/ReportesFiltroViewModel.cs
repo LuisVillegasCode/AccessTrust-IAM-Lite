@@ -16,6 +16,8 @@ public class ReportesFiltroViewModel
 
     public string? UsuarioTexto { get; set; }
 
+    public string? SeccionesAbiertas { get; set; }
+
     // ==========================
     // Filtros contextuales
     // ==========================
