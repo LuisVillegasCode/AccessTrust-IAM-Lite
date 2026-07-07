@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AccessTrust.Web.Data;
 using AccessTrust.Web.ViewModels.Reports;
 using MongoDB.Bson;
@@ -7,6 +8,49 @@ namespace AccessTrust.Web.Services.Reports;
 
 public class ReporteService : IReporteService
 {
+
+    public async Task<List<ReporteFiltroOpcionViewModel>> BuscarUsuariosAsync(
+        string term,
+        int limite = 10)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return new List<ReporteFiltroOpcionViewModel>();
+        }
+
+        var termino = term.Trim();
+
+        if (termino.Length < 2)
+        {
+            return new List<ReporteFiltroOpcionViewModel>();
+        }
+
+        var limiteSeguro = Math.Clamp(limite, 1, 10);
+        var patron = Regex.Escape(termino);
+
+        var filtro = Builders<BsonDocument>.Filter.Or(
+            Builders<BsonDocument>.Filter.Regex(
+                "Nombre",
+                new BsonRegularExpression(patron, "i")
+            ),
+            Builders<BsonDocument>.Filter.Regex(
+                "Correo",
+                new BsonRegularExpression(patron, "i")
+            )
+        );
+
+        var usuarios = await _usuarios
+            .Find(filtro)
+            .Sort(new BsonDocument("Nombre", 1))
+            .Limit(limiteSeguro)
+            .ToListAsync();
+
+        return usuarios.Select(u => new ReporteFiltroOpcionViewModel
+        {
+            Id = GetBsonValueAsString(u.GetValue("_id")),
+            Texto = $"{GetBsonString(u, "Nombre")} - {GetBsonString(u, "Correo")}"
+        }).ToList();
+    }
     private readonly IMongoCollection<BsonDocument> _solicitudes;
     private readonly IMongoCollection<BsonDocument> _credenciales;
     private readonly IMongoCollection<BsonDocument> _tickets;
@@ -354,16 +398,28 @@ public class ReporteService : IReporteService
             Texto = $"{GetBsonString(r, "Nombre")} ({GetBsonString(r, "Sensibilidad")})"
         }).ToList();
 
-        var usuarios = await _usuarios
-            .Find(Builders<BsonDocument>.Filter.Empty)
-            .Sort(new BsonDocument("Correo", 1))
-            .ToListAsync();
+        filtro.UsuariosDisponibles = new List<ReporteFiltroOpcionViewModel>();
+        filtro.UsuarioTexto = string.Empty;
 
-        filtro.UsuariosDisponibles = usuarios.Select(u => new ReporteFiltroOpcionViewModel
+        if (!string.IsNullOrWhiteSpace(filtro.UsuarioId) &&
+            ObjectId.TryParse(filtro.UsuarioId, out var usuarioSeleccionadoId))
         {
-            Id = GetBsonValueAsString(u.GetValue("_id")),
-            Texto = $"{GetBsonString(u, "Nombre")} - {GetBsonString(u, "Correo")}"
-        }).ToList();
+            var usuarioSeleccionado = await _usuarios
+                .Find(Builders<BsonDocument>.Filter.Eq("_id", usuarioSeleccionadoId))
+                .FirstOrDefaultAsync();
+
+            if (usuarioSeleccionado is not null)
+            {
+                filtro.UsuarioTexto =
+                    $"{GetBsonString(usuarioSeleccionado, "Nombre")} - {GetBsonString(usuarioSeleccionado, "Correo")}";
+
+                filtro.UsuariosDisponibles.Add(new ReporteFiltroOpcionViewModel
+                {
+                    Id = filtro.UsuarioId,
+                    Texto = filtro.UsuarioTexto
+                });
+            }
+        }
 
         filtro.EstadosDisponibles = new List<string>
         {

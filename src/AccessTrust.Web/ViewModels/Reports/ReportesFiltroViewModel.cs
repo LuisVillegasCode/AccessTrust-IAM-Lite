@@ -10,6 +10,8 @@ public class ReportesFiltroViewModel
 
     public string? UsuarioId { get; set; }
 
+    public string? UsuarioTexto { get; set; }
+
     public string? Estado { get; set; }
 
     public List<ReporteFiltroOpcionViewModel> RecursosDisponibles { get; set; } = new();

@@ -24,4 +24,12 @@ public class ReportesController : Controller
 
         return View(dashboard);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> BuscarUsuarios(string term)
+    {
+        var usuarios = await _reporteService.BuscarUsuariosAsync(term);
+
+        return Json(usuarios);
+    }
 }

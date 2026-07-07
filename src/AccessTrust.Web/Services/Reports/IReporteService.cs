@@ -7,4 +7,8 @@ public interface IReporteService
     Task<ReportesDashboardViewModel> GenerarDashboardAsync(
         ReportesFiltroViewModel filtro
     );
+    Task<List<ReporteFiltroOpcionViewModel>> BuscarUsuariosAsync(
+        string term,
+        int limite = 10
+    );
 }

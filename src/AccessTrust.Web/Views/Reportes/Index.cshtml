@@ -55,18 +55,30 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3">
-                        <label for="UsuarioId" class="form-label">Usuario</label>
-                        <select id="UsuarioId" name="UsuarioId" class="form-select">
-                            <option value="">Todos</option>
-                            @foreach (var usuario in Model.Filtro.UsuariosDisponibles)
-                            {
-                                <option value="@usuario.Id"
-                                        selected="@(Model.Filtro.UsuarioId == usuario.Id ? "selected" : null)">
-                                    @usuario.Texto
-                                </option>
-                            }
-                        </select>
+                    <div class="col-md-3 position-relative">
+                        <label for="UsuarioBusqueda" class="form-label">Usuario</label>
+
+                        <input id="UsuarioBusqueda"
+                            name="UsuarioTexto"
+                            type="text"
+                            class="form-control"
+                            value="@Model.Filtro.UsuarioTexto"
+                            placeholder="Buscar por nombre o correo"
+                            autocomplete="off" />
+
+                        <input id="UsuarioId"
+                            name="UsuarioId"
+                            type="hidden"
+                            value="@Model.Filtro.UsuarioId" />
+
+                        <div id="UsuarioResultados"
+                            class="list-group position-absolute w-100 shadow-sm d-none"
+                            style="z-index: 1050;">
+                        </div>
+
+                        <small class="text-muted">
+                            Escribe mínimo 2 caracteres y selecciona un usuario.
+                        </small>
                     </div>
 
                     <div class="col-md-3">
@@ -451,3 +463,83 @@
         solicitudes, credenciales temporales, tickets externos, recursos y eventos de auditoría.
     </div>
 </div>
+<script>
+    (() => {
+        const input = document.getElementById("UsuarioBusqueda");
+        const hidden = document.getElementById("UsuarioId");
+        const results = document.getElementById("UsuarioResultados");
+
+        if (!input || !hidden || !results) {
+            return;
+        }
+
+        let timer = null;
+
+        function limpiarResultados() {
+            results.innerHTML = "";
+            results.classList.add("d-none");
+        }
+
+        function crearResultado(usuario) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "list-group-item list-group-item-action";
+            button.textContent = usuario.texto;
+
+            button.addEventListener("click", () => {
+                input.value = usuario.texto;
+                hidden.value = usuario.id;
+                limpiarResultados();
+            });
+
+            return button;
+        }
+
+        input.addEventListener("input", () => {
+            const term = input.value.trim();
+
+            hidden.value = "";
+
+            if (timer) {
+                clearTimeout(timer);
+            }
+
+            if (term.length < 2) {
+                limpiarResultados();
+                return;
+            }
+
+            timer = setTimeout(async () => {
+                const response = await fetch(`/Reportes/BuscarUsuarios?term=${encodeURIComponent(term)}`);
+
+                if (!response.ok) {
+                    limpiarResultados();
+                    return;
+                }
+
+                const usuarios = await response.json();
+
+                results.innerHTML = "";
+
+                if (usuarios.length === 0) {
+                    const empty = document.createElement("div");
+                    empty.className = "list-group-item text-muted";
+                    empty.textContent = "No se encontraron usuarios.";
+                    results.appendChild(empty);
+                } else {
+                    usuarios.forEach(usuario => {
+                        results.appendChild(crearResultado(usuario));
+                    });
+                }
+
+                results.classList.remove("d-none");
+            }, 250);
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!input.contains(event.target) && !results.contains(event.target)) {
+                limpiarResultados();
+            }
+        });
+    })();
+</script>
