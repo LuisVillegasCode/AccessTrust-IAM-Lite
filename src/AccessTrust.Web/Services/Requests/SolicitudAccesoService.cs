@@ -402,6 +402,7 @@ public class SolicitudAccesoService : ISolicitudAccesoService
     public async Task<(bool Success, string Message)> RechazarAsync(
         string solicitudId,
         string aprobadorId,
+        bool esAdministrador,
         string observacion)
     {
         if (!ObjectId.TryParse(solicitudId, out _) || !ObjectId.TryParse(aprobadorId, out _))
@@ -419,6 +420,35 @@ public class SolicitudAccesoService : ISolicitudAccesoService
         if (solicitud is null)
         {
             return (false, "La solicitud no existe.");
+        }
+
+        var recurso = await _recursoService.GetByIdAsync(solicitud.RecursoId);
+
+        var permiso = await PuedeRevisarSolicitudAsync(
+            solicitudId,
+            aprobadorId,
+            esAdministrador
+        );
+
+        if (!permiso.TienePermiso)
+        {
+            await _auditService.RegistrarEventoAsync(
+                accion: "SOLICITUD_RECHAZO_NO_AUTORIZADO",
+                entidadTipo: "SolicitudAcceso",
+                resultado: ResultadoAuditoria.Fallido,
+                actorUserId: aprobadorId,
+                entidadId: solicitudId,
+                detalle: new Dictionary<string, string>
+                {
+                    { "usuario_id", solicitud.UsuarioId },
+                    { "recurso_id", solicitud.RecursoId },
+                    { "recurso_nombre", recurso?.Nombre ?? "Recurso no disponible" },
+                    { "estado_solicitud", solicitud.Estado.ToString() },
+                    { "motivo_bloqueo", permiso.Message }
+                }
+            );
+
+            return (false, permiso.Message);
         }
 
         if (solicitud.Estado != EstadoSolicitud.Pendiente)

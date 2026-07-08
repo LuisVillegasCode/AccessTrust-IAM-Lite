@@ -258,9 +258,12 @@ public class AprobacionesController : Controller
             return Unauthorized();
         }
 
+        var esAdministrador = User.IsInRole("Administrador");
+
         var resultado = await _solicitudAccesoService.RechazarAsync(
             model.SolicitudId,
             aprobadorId,
+            esAdministrador,
             model.Observacion
         );
 

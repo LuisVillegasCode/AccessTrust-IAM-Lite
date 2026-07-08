@@ -36,6 +36,7 @@ public interface ISolicitudAccesoService
     Task<(bool Success, string Message)> RechazarAsync(
         string solicitudId,
         string aprobadorId,
+        bool esAdministrador,
         string observacion
     );
 }
