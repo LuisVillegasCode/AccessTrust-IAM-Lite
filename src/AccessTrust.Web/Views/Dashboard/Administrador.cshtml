@@ -1,0 +1,231 @@
+@model AccessTrust.Web.ViewModels.Dashboard.AdministradorDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard del Administrador";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">Dashboard del Administrador</h2>
+        <p class="text-muted mb-0">
+            Bienvenido, @Model.UsuarioNombre. Aquí puedes revisar el estado global del IAM.
+        </p>
+    </div>
+    <div class="text-end text-muted small">
+        Generado: @Model.GeneradoAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Usuarios activos</div>
+                <div class="fs-3 fw-bold">@Model.UsuariosActivos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Recursos activos</div>
+                <div class="fs-3 fw-bold">@Model.RecursosActivos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Solicitudes pendientes</div>
+                <div class="fs-3 fw-bold">@Model.SolicitudesPendientesTotales</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Credenciales activas</div>
+                <div class="fs-3 fw-bold">@Model.CredencialesActivas</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Tickets externos</div>
+                <div class="fs-3 fw-bold">@Model.TicketsExternosEmitidos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Eventos hoy</div>
+                <div class="fs-3 fw-bold">@Model.EventosAuditoriaHoy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Fallidos recientes</div>
+                <div class="fs-3 fw-bold">@Model.EventosFallidosRecientes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Intentos no autorizados</div>
+                <div class="fs-3 fw-bold">@Model.IntentosNoAutorizadosRecientes</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert @(Model.IntegridadAuditoriaValida ? "alert-success" : "alert-danger")">
+    <strong>Integridad de auditoría:</strong>
+    @(Model.IntegridadAuditoriaValida ? "Cadena válida según el estado registrado." : "Requiere revisión.")
+</div>
+
+<div class="mb-4">
+    <a class="btn btn-primary" asp-controller="Reportes" asp-action="Index">Reportes</a>
+    <a class="btn btn-outline-secondary" asp-controller="Auditoria" asp-action="Index">Auditoría</a>
+    <a class="btn btn-outline-secondary" asp-controller="Usuarios" asp-action="Index">Usuarios</a>
+    <a class="btn btn-outline-secondary" asp-controller="Recursos" asp-action="Index">Recursos</a>
+    <a class="btn btn-outline-secondary" asp-controller="Politicas" asp-action="Index">Políticas</a>
+    <a class="btn btn-outline-secondary" asp-controller="Credenciales" asp-action="Index">Credenciales activas</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Eventos recientes de auditoría
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.EventosRecientes.Any())
+                {
+                    <div class="p-3 text-muted">No hay eventos recientes.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Seq</th>
+                                    <th>Acción</th>
+                                    <th>Resultado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.EventosRecientes)
+                                {
+                                    <tr>
+                                        <td>@item.Seq</td>
+                                        <td>@item.Accion</td>
+                                        <td>
+                                            @if (item.Resultado == "Exitoso")
+                                            {
+                                                <span class="badge bg-success">Exitoso</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">@item.Resultado</span>
+                                            }
+                                        </td>
+                                        <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-semibold">
+                Recursos críticos
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.RecursosCriticos.Any())
+                {
+                    <div class="p-3 text-muted">No hay recursos críticos activos registrados.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Recurso</th>
+                                    <th>Responsable</th>
+                                    <th>Sensibilidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.RecursosCriticos)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@item.Nombre</div>
+                                            <div class="text-muted small">@item.Tipo</div>
+                                        </td>
+                                        <td>
+                                            <div>@item.ResponsableNombre</div>
+                                            <div class="text-muted small">@item.ResponsableCorreo</div>
+                                        </td>
+                                        <td>@item.Sensibilidad</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Alertas recientes
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.AlertasRecientes.Any())
+                {
+                    <div class="p-3 text-muted">No hay alertas recientes.</div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var item in Model.AlertasRecientes)
+                        {
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-semibold">@item.Mensaje</span>
+                                    <span class="badge bg-secondary">@item.Severidad</span>
+                                </div>
+                                <div class="text-muted small">
+                                    Estado: @item.Estado · @item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

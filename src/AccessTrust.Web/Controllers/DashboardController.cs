@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using AccessTrust.Web.Services.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,6 +8,13 @@ namespace AccessTrust.Web.Controllers;
 [Authorize]
 public class DashboardController : Controller
 {
+    private readonly IDashboardService _dashboardService;
+
+    public DashboardController(IDashboardService dashboardService)
+    {
+        _dashboardService = dashboardService;
+    }
+
     public IActionResult Index()
     {
         if (User.IsInRole("Administrador"))
@@ -27,20 +36,62 @@ public class DashboardController : Controller
     }
 
     [Authorize(Roles = "Solicitante")]
-    public IActionResult Solicitante()
+    public async Task<IActionResult> Solicitante()
     {
-        return Content("Dashboard del Solicitante: acceso autorizado.");
+        var usuario = GetUsuarioActual();
+
+        if (string.IsNullOrWhiteSpace(usuario.UsuarioId))
+        {
+            return RedirectToAction("AccessDenied", "Account");
+        }
+
+        var model = await _dashboardService.GetSolicitanteDashboardAsync(
+            usuario.UsuarioId,
+            usuario.UsuarioNombre,
+            usuario.UsuarioCorreo
+        );
+
+        return View(model);
     }
 
     [Authorize(Roles = "Aprobador")]
-    public IActionResult Aprobador()
+    public async Task<IActionResult> Aprobador()
     {
-        return Content("Dashboard del Aprobador: acceso autorizado.");
+        var usuario = GetUsuarioActual();
+
+        if (string.IsNullOrWhiteSpace(usuario.UsuarioId))
+        {
+            return RedirectToAction("AccessDenied", "Account");
+        }
+
+        var model = await _dashboardService.GetAprobadorDashboardAsync(
+            usuario.UsuarioId,
+            usuario.UsuarioNombre,
+            usuario.UsuarioCorreo
+        );
+
+        return View(model);
     }
 
     [Authorize(Roles = "Administrador")]
-    public IActionResult Administrador()
+    public async Task<IActionResult> Administrador()
     {
-        return Content("Dashboard del Administrador: acceso autorizado.");
+        var usuario = GetUsuarioActual();
+
+        var model = await _dashboardService.GetAdministradorDashboardAsync(
+            usuario.UsuarioNombre,
+            usuario.UsuarioCorreo
+        );
+
+        return View(model);
+    }
+
+    private (string UsuarioId, string UsuarioNombre, string UsuarioCorreo) GetUsuarioActual()
+    {
+        var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        var usuarioNombre = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Usuario";
+        var usuarioCorreo = User.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+
+        return (usuarioId, usuarioNombre, usuarioCorreo);
     }
 }

@@ -1,0 +1,175 @@
+@model AccessTrust.Web.ViewModels.Dashboard.SolicitanteDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard del Solicitante";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">Dashboard del Solicitante</h2>
+        <p class="text-muted mb-0">
+            Bienvenido, @Model.UsuarioNombre. Aquí puedes revisar tus solicitudes y accesos temporales activos.
+        </p>
+    </div>
+    <div class="text-end text-muted small">
+        Generado: @Model.GeneradoAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Pendientes</div>
+                <div class="fs-3 fw-bold">@Model.SolicitudesPendientes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Aprobadas</div>
+                <div class="fs-3 fw-bold">@Model.SolicitudesAprobadas</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Rechazadas</div>
+                <div class="fs-3 fw-bold">@Model.SolicitudesRechazadas</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Accesos activos</div>
+                <div class="fs-3 fw-bold">@Model.AccesosActivos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="text-muted small">Próximos a expirar</div>
+                <div class="fs-3 fw-bold">@Model.AccesosProximosAExpirar</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <a class="btn btn-primary" asp-controller="Solicitudes" asp-action="Create">
+        Nueva solicitud
+    </a>
+    <a class="btn btn-outline-secondary" asp-controller="Solicitudes" asp-action="Index">
+        Mis solicitudes
+    </a>
+    <a class="btn btn-outline-secondary" asp-controller="MisAccesos" asp-action="Index">
+        Mis accesos activos
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Últimas solicitudes
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.SolicitudesRecientes.Any())
+                {
+                    <div class="p-3 text-muted">No tienes solicitudes recientes.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Recurso</th>
+                                    <th>Sensibilidad</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.SolicitudesRecientes)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@item.RecursoNombre</div>
+                                            <div class="text-muted small">@item.RecursoTipo</div>
+                                        </td>
+                                        <td>@item.Sensibilidad</td>
+                                        <td>
+                                            <span class="badge bg-secondary">@item.Estado</span>
+                                        </td>
+                                        <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                Accesos activos recientes
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.AccesosActivosRecientes.Any())
+                {
+                    <div class="p-3 text-muted">No tienes accesos activos.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Recurso</th>
+                                    <th>Expira</th>
+                                    <th>Uso</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.AccesosActivosRecientes)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@item.RecursoNombre</div>
+                                            <div class="text-muted small">@item.Sensibilidad</div>
+                                        </td>
+                                        <td>@item.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@item.UsosRealizados / @item.UsosMaximos</td>
+                                        <td>
+                                            @if (item.ProximoAExpirar)
+                                            {
+                                                <span class="badge bg-warning text-dark">Próximo a expirar</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

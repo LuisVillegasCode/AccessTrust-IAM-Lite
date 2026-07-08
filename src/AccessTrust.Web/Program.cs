@@ -1,3 +1,4 @@
+using AccessTrust.Web.Services.Dashboard;
 using AccessTrust.Web.Services.Reports;
 using AccessTrust.Web.Services.Users;
 using AccessTrust.Web.Services.Security;
@@ -82,6 +83,7 @@ builder.Services.AddScoped<IRecursoService, RecursoService>();
 builder.Services.AddScoped<ISolicitudAccesoService, SolicitudAccesoService>();
 builder.Services.AddScoped<ICredencialTemporalService, CredencialTemporalService>();
 builder.Services.AddScoped<IExternalAccessTicketService, ExternalAccessTicketService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 var app = builder.Build();
 
