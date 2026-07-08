@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
 @model AccessTrust.Web.Models.Recurso
 @using AccessTrust.Web.Models
 
@@ -37,6 +38,18 @@
                 class="form-select">
         </select>
         <span asp-validation-for="Sensibilidad" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ResponsableId" class="form-label">Responsable del recurso</label>
+        <select asp-for="ResponsableId"
+                asp-items="@(ViewBag.Aprobadores as SelectList)"
+                class="form-select">
+            <option value="">Seleccione un aprobador activo...</option>
+        </select>
+        <span asp-validation-for="ResponsableId" class="text-danger"></span>
+        <div class="form-text">
+            Solo se pueden asignar usuarios activos con rol Aprobador.
+        </div>
     </div>
 
     <div class="form-check mb-3">

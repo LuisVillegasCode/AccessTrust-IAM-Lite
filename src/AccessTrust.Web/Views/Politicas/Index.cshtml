@@ -27,10 +27,8 @@ else
                 <th>Nombre</th>
                 <th>Sensibilidad</th>
                 <th>Duración máxima</th>
-                <th>OTP</th>
                 <th>Usos máximos</th>
                 <th>Aprobación</th>
-                <th>Intentos OTP</th>
                 <th style="width: 120px;">Acciones</th>
             </tr>
         </thead>
@@ -45,16 +43,6 @@ else
                         </span>
                     </td>
                     <td>@politica.DuracionMaxMin min</td>
-                    <td>
-                        @if (politica.RequiereOtp)
-                        {
-                            <span class="badge bg-warning text-dark">Sí</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-light text-dark">No</span>
-                        }
-                    </td>
                     <td>@politica.MaxUsos</td>
                     <td>
                         @if (politica.RequiereAprobacion)
@@ -66,7 +54,6 @@ else
                             <span class="badge bg-danger">No</span>
                         }
                     </td>
-                    <td>@politica.IntentosOtpMax</td>
                     <td>
                         <a asp-action="Edit" asp-route-id="@politica.Id" class="btn btn-sm btn-outline-primary">
                             Editar

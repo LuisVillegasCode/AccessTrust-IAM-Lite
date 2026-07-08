@@ -15,6 +15,8 @@
 
     <input type="hidden" asp-for="Id" />
     <input type="hidden" asp-for="Sensibilidad" />
+    <input type="hidden" asp-for="RequiereOtp" />
+    <input type="hidden" asp-for="IntentosOtpMax" />
 
     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -42,19 +44,6 @@
         <label asp-for="MaxUsos" class="form-label">Usos máximos</label>
         <input asp-for="MaxUsos" class="form-control" type="number" min="1" />
         <span asp-validation-for="MaxUsos" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="IntentosOtpMax" class="form-label">Intentos máximos de OTP</label>
-        <input asp-for="IntentosOtpMax" class="form-control" type="number" min="1" />
-        <span asp-validation-for="IntentosOtpMax" class="text-danger"></span>
-    </div>
-
-    <div class="form-check mb-3">
-        <input asp-for="RequiereOtp" class="form-check-input" />
-        <label asp-for="RequiereOtp" class="form-check-label">
-            Requiere OTP
-        </label>
     </div>
 
     <div class="form-check mb-3">
