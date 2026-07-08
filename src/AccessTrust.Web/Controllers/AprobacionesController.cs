@@ -8,6 +8,7 @@ using AccessTrust.Web.Services.Resources;
 using AccessTrust.Web.ViewModels.Approvals;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using AccessTrust.Web.Services.Users;
 
 namespace AccessTrust.Web.Controllers;
 
@@ -19,18 +20,21 @@ public class AprobacionesController : Controller
     private readonly IAuditService _auditService;
     private readonly IPoliticaAccesoService _politicaAccesoService;
     private readonly ICredencialTemporalService _credencialTemporalService;
+    private readonly IUsuarioAdminService _usuarioAdminService;
 
     public AprobacionesController(
         ISolicitudAccesoService solicitudAccesoService,
         IRecursoService recursoService,
         IPoliticaAccesoService politicaAccesoService,
         ICredencialTemporalService credencialTemporalService,
+        IUsuarioAdminService usuarioAdminService,
         IAuditService auditService)
     {
         _solicitudAccesoService = solicitudAccesoService;
         _recursoService = recursoService;
         _politicaAccesoService = politicaAccesoService;
         _credencialTemporalService = credencialTemporalService;
+        _usuarioAdminService = usuarioAdminService;
         _auditService = auditService;
     }
 
@@ -55,6 +59,7 @@ public class AprobacionesController : Controller
         foreach (var solicitud in solicitudes)
         {
             var recurso = await _recursoService.GetByIdAsync(solicitud.RecursoId);
+            var usuarioSolicitante = await _usuarioAdminService.GetByIdAsync(solicitud.UsuarioId);
 
             viewModels.Add(new SolicitudPendienteListItemViewModel
             {
@@ -68,7 +73,9 @@ public class AprobacionesController : Controller
                 DuracionSolicitadaMin = solicitud.DuracionSolicitadaMin,
                 Prioridad = solicitud.Prioridad,
                 Estado = solicitud.Estado,
-                CreatedAt = solicitud.CreatedAt
+                CreatedAt = solicitud.CreatedAt,
+                UsuarioNombre = usuarioSolicitante?.Nombre ?? "Usuario no encontrado",
+                UsuarioCorreo = usuarioSolicitante?.Correo ?? solicitud.UsuarioId
             });
         }
 
@@ -145,6 +152,8 @@ public class AprobacionesController : Controller
 
         var recurso = await _recursoService.GetByIdAsync(solicitud.RecursoId);
 
+        var usuarioSolicitante = await _usuarioAdminService.GetByIdAsync(solicitud.UsuarioId);
+
         if (recurso is null)
         {
             TempData["Error"] = "El recurso asociado a la solicitud no existe.";
@@ -182,6 +191,8 @@ public class AprobacionesController : Controller
             PoliticaRequiereOtp = politica.RequiereOtp,
             PoliticaMaxUsos = politica.MaxUsos,
             DuracionAprobadaMin = duracionSugerida,
+            UsuarioNombre = usuarioSolicitante?.Nombre ?? "Usuario no encontrado",
+            UsuarioCorreo = usuarioSolicitante?.Correo ?? solicitud.UsuarioId,
             Observacion = string.Empty
         };
 

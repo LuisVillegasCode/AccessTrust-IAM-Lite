@@ -37,4 +37,8 @@ public class SolicitudAprobacionDetailsViewModel
     public int DuracionAprobadaMin { get; set; }
 
     public string? Observacion { get; set; }
+
+    public string UsuarioNombre { get; set; } = string.Empty;
+
+    public string UsuarioCorreo { get; set; } = string.Empty;
 }

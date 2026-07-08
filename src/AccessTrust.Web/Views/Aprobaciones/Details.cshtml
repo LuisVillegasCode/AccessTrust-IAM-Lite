@@ -29,7 +29,10 @@
             </dd>
 
             <dt class="col-sm-3">Usuario solicitante</dt>
-            <dd class="col-sm-9">@Model.UsuarioId</dd>
+            <dd class="col-sm-9">
+                <div class="fw-semibold">@Model.UsuarioNombre</div>
+                <div class="text-muted small">@Model.UsuarioCorreo</div>
+            </dd>
 
             <dt class="col-sm-3">Motivo</dt>
             <dd class="col-sm-9">@Model.Motivo</dd>

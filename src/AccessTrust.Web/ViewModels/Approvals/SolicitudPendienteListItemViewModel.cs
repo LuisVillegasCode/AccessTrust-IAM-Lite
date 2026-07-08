@@ -25,4 +25,8 @@ public class SolicitudPendienteListItemViewModel
     public EstadoSolicitud Estado { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public string UsuarioNombre { get; set; } = string.Empty;
+
+    public string UsuarioCorreo { get; set; } = string.Empty;
 }

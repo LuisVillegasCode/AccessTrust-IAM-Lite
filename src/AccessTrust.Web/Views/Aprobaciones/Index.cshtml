@@ -43,6 +43,7 @@ else
         <thead>
             <tr>
                 <th>Recurso</th>
+                <th>Solicitante</th>
                 <th>Tipo</th>
                 <th>Sensibilidad</th>
                 <th>Duración solicitada</th>
@@ -56,6 +57,10 @@ else
             {
                 <tr>
                     <td>@solicitud.RecursoNombre</td>
+                    <td>
+                        <div class="fw-semibold">@solicitud.UsuarioNombre</div>
+                        <div class="text-muted small">@solicitud.UsuarioCorreo</div>
+                    </td>
                     <td>@solicitud.RecursoTipo</td>
                     <td>
                         <span class="badge bg-secondary">

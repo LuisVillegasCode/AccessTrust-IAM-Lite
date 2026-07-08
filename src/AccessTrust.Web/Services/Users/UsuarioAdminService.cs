@@ -5,6 +5,7 @@ using AccessTrust.Web.Services.Security;
 using AccessTrust.Web.ViewModels.Users;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Driver;
+using MongoDB.Bson;
 
 namespace AccessTrust.Web.Services.Users;
 
@@ -31,6 +32,18 @@ public class UsuarioAdminService : IUsuarioAdminService
             .Find(Builders<Usuario>.Filter.Empty)
             .SortBy(u => u.Correo)
             .ToListAsync();
+    }
+
+    public async Task<Usuario?> GetByIdAsync(string id)
+    {
+        if (!ObjectId.TryParse(id, out _))
+        {
+            return null;
+        }
+
+        return await _usuarios
+            .Find(u => u.Id == id)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<(bool Success, string Message)> CrearUsuarioAsync(

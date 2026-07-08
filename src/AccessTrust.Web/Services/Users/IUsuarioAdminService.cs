@@ -11,4 +11,6 @@ public interface IUsuarioAdminService
         CrearUsuarioAdminViewModel model,
         string actorUserId
     );
+
+    Task<Usuario?> GetByIdAsync(string id);
 }
