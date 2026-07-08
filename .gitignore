@@ -482,3 +482,29 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# AccessTrust local secrets
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+appsettings.Production.json
+appsettings.Staging.json
+
+# Ngrok local config
+ngrok.yml
+.ngrok2/
+
+# MongoDB backups / dumps
+backups/
+backup/
+*.bson
+*.metadata.json
+
+# Local evidence / screenshots
+evidencias/
+screenshots/
+
+# Runtime/local files
+*.db
+*.sqlite
+*.sqlite3
