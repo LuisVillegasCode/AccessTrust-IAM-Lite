@@ -5,11 +5,18 @@
 }
 
 <div class="container mt-4">
-    <div class="mb-3">
-        <h2 class="mb-1">Usuarios del IAM</h2>
-        <p class="text-muted mb-0">
-            Vista administrativa para validar el cifrado de documentos de identidad.
-        </p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Usuarios del IAM</h2>
+            <p class="text-muted mb-0">
+                Vista administrativa para validar el cifrado de documentos de identidad.
+            </p>
+        </div>
+        <div>
+            <a asp-action="Create" class="btn btn-primary">
+                Crear usuario
+            </a>
+        </div>
     </div>
 
     <div class="alert alert-info">
